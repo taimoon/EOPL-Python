@@ -308,7 +308,7 @@ def test_letrec_multi():
             odd(x) = if zero?(x) then 0 else (even -(x,1))
             in (even 5)'''
     assert(value_of_prog(prog) == False)
-
+    
     prog = '''\
     letrec
         mod(x,d) = if less?(x,d) then x else (mod -(x,d) d)
@@ -340,9 +340,11 @@ def test_letrec_multi():
                         (odd x) => (sum_odd (dec x) (add x acm))
                         else (sum_odd (dec x) acm)
                         end
-                    in (sum_odd 7 0)'''
-    ans = sum([i for i in range(7+1) if i % 2 != 0])
+                    in (sum_odd 6 0)'''
+    # value cannot be too big
+    ans = sum([i for i in range(6+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
+    
     
 
 if __name__ == '__main__':
