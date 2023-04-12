@@ -13,7 +13,6 @@ def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
         for var,val in env.env:
             senv = extend_senv(var,senv)
             nameless_env = extend_nameless_env(val,nameless_env)
-
     nameless_prog = translation_of(parse(prog),senv)
     return value_of(nameless_prog, nameless_env)
 
@@ -54,7 +53,7 @@ def translation_of(expr,static_env):
     elif isinstance(expr, Rec_Proc): # TODO
         return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
     elif isinstance(expr,List):
-        return translation_of(Primitive_Exp('list',tuple(expr.exps)),static_env)
+        return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
     elif isinstance(expr,Let_Exp):
         return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
     elif isinstance(expr,Let_Star_Exp):

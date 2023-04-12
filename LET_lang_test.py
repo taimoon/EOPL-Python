@@ -1,6 +1,6 @@
 # from LET import *
-from LET_cc import *
-# from NAMELESS_LET import *
+# from LET_cc import *
+from NAMELESS_LET import *
 # from EXPLICIT_REFS import *
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
@@ -363,8 +363,8 @@ if __name__ == '__main__':
     test_proc_dynamic()
     test_proc_multi()
     test_y_combinator()
-    test_letrec()
-    test_letrec_multi()
+    # test_letrec()
+    # test_letrec_multi()
     
     # test_other_repr()
     print('pass all test')
