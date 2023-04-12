@@ -2,7 +2,7 @@ from LET_parser import *
 from LET_environment import *
 from LET_ast_node import *
 # TODO : handling letrec
-def value_of_prog(prog:str, env = empty_env(), parse = parser.parse):
+def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
     # workaround
     # so that it can use the same test cases used by other LET variants.
     # the test cases use ordinary environment
@@ -17,7 +17,9 @@ def value_of_prog(prog:str, env = empty_env(), parse = parser.parse):
     nameless_prog = translation_of(parse(prog),senv)
     return value_of(nameless_prog, nameless_env)
 
-def apply_proc(proc:Proc_Val,args):
+def apply_proc(proc:Proc_Val|Primitve_Implementation,args):
+    if isinstance(proc,Primitve_Implementation):
+        return proc.op(*args)
     new_env = proc.env
     for arg in args:
         new_env = extend_nameless_env(arg,new_env)
@@ -29,8 +31,7 @@ def translation_of(expr,static_env):
     elif isinstance(expr, Var_Exp):
         return Nameless_Var_Exp(apply_senv(static_env, expr.var))
     elif isinstance(expr, Primitive_Exp):
-        args = map(lambda exp: translation_of(exp, static_env), expr.exps)
-        return Primitive_Exp(expr.op,tuple(args))
+            return translation_of(App_Exp(Var_Exp(expr.op),expr.exps),static_env)
     elif isinstance(expr, Diff_Exp):
         return Diff_Exp(translation_of(expr.left,static_env),translation_of(expr.right,static_env))
     elif isinstance(expr, Zero_Test_Exp):
@@ -53,12 +54,7 @@ def translation_of(expr,static_env):
     elif isinstance(expr, Rec_Proc): # TODO
         return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
     elif isinstance(expr,List):
-        def recur(*args):
-            if args == ():
-                return NULL()
-            else:
-                return Pair(args[0], recur(*args[1:]))
-        return translation_of(Primitive_Exp(recur,tuple(expr.exps)),static_env)
+        return translation_of(Primitive_Exp('list',tuple(expr.exps)),static_env)
     elif isinstance(expr,Let_Exp):
         return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
     elif isinstance(expr,Let_Star_Exp):

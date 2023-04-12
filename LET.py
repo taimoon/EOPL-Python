@@ -1,13 +1,17 @@
 from LET_parser import *
 from LET_environment import *
 
-def value_of_prog(prog, env = empty_env(), parse = parser.parse):
+def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return value_of(parse(prog), env)
 
-def apply_proc(proc:Proc_Val,args,env):
+def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
+    if isinstance(proc,Primitve_Implementation):
+        return proc.op(*args)
     for param,arg in zip(proc.params,args):
         env = extend_env(param,arg,env)
-    return value_of(proc.body, env)
+    if isinstance(proc,Proc_Val):
+        return value_of(proc.body, env)
+    
 
 def apply_primitive(prim:Primitive_Exp,args):
     return prim.op(*args)
@@ -18,8 +22,7 @@ def value_of(expr, env):
     elif isinstance(expr, Var_Exp):
         return apply_env(env, expr.var)
     elif isinstance(expr, Primitive_Exp):
-        args = map(lambda exp: value_of(exp, env), expr.exps)
-        return apply_primitive(expr,args)
+        return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr, Diff_Exp):
         return value_of(expr.left,env) - value_of(expr.right,env)
     elif isinstance(expr, Zero_Test_Exp):
@@ -40,16 +43,11 @@ def value_of(expr, env):
     elif isinstance(expr, Rec_Proc):
         return value_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,env))
     elif isinstance(expr,List):
-        def recur(*args):
-            if args == ():
-                return NULL()
-            else:
-                return Pair(args[0], recur(*args[1:]))
-        return value_of(Primitive_Exp(recur,tuple(expr.exps)),env)
+        return value_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),env)
     elif isinstance(expr,Unpack_Exp):
         # TODO : making this as derived form
         unpack_n_apply = lambda lst : apply_proc(Proc_Val(expr.vars,expr.expr,env),lst.unpack(),env)
-        return value_of(Primitive_Exp(unpack_n_apply,[expr.list_expr]),env)
+        return value_of(Primitive_Exp('unpack',[expr.list_expr]),extend_env('unpack',Primitve_Implementation(unpack_n_apply),env))
     elif isinstance(expr,Let_Exp):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form

@@ -114,6 +114,31 @@ def extend_env_rec_multi(vars,paramss,bodys,env:Environment):
 def apply_env(env:Environment,var):
     return env.apply(var)
 
+def init_env():
+    def recur(*args):
+            if args == ():
+                return NULL()
+            else:
+                return Pair(args[0], recur(*args[1:]))
+    from operator import sub,add,mul,truediv,gt,lt,eq
+    corspd = {'-': sub,
+            '+': add,
+            '*': mul,
+            '/': truediv,
+            'greater?':gt,
+            'less?':lt,
+            'equal?': eq,
+            'cons': lambda x,y: Pair(x,y),
+            'zero?': lambda x : x == 0,
+            'minus' : lambda exp : - exp,
+            'car' : lambda t: t.car,
+            'cdr' : lambda t: t.cdr,
+            'list':recur,}
+    env = empty_env()
+    for var,val in corspd.items():
+        env = extend_env(var,Primitve_Implementation(val),env)
+    return env
+
 def empty_senv():
     return Environment()
 

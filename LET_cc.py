@@ -8,11 +8,13 @@ def end_cc(val):
 def apply_cont(cc,val):
     return cc(val)
 
-def value_of_prog(prog, env = empty_env(), parse = parser.parse):
+def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return value_of_k(parse(prog), env,end_cc)
 
 def value_of_k(expr, env,cc):
-    def apply_proc_k(proc:Proc_Val,args,cc):
+    def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
+        if isinstance(proc,Primitve_Implementation):
+            return proc.op(*args)
         env = proc.env
         for param,arg in zip(proc.params,args):
             env = extend_env(param,arg,env)
@@ -58,23 +60,20 @@ def value_of_k(expr, env,cc):
     elif isinstance(expr, Rec_Proc):
         return value_of_k(expr.expr,extend_env_rec_multi(expr.var, expr.params,expr.body,env),cc)
     elif isinstance(expr, Primitive_Exp):
+        # TODO: Fix this workaround
+        op = apply_env(env,expr.op).op
         def args_builder(exps,acm_vals):
             if exps[1:] == ():
-                last_cc = lambda val: apply_cont(cc,expr.op(*(acm_vals+[val])))
+                last_cc = lambda val: apply_cont(cc,op(*(acm_vals+[val])))
                 return value_of_k(exps[0],env,last_cc)
             nxt_cc = lambda val: args_builder(exps[1:],acm_vals+[val])
             return value_of_k(exps[0],env,nxt_cc)
         if expr.exps == ():
-            return apply_cont(cc,expr.op(*expr.exps))
+            return apply_cont(cc,op(*expr.exps))
         else:
             return args_builder(expr.exps,[])
     elif isinstance(expr,List):
-        def recur(*args):
-            if args == ():
-                return NULL()
-            else:
-                return Pair(args[0], recur(*args[1:]))
-        return value_of_k(Primitive_Exp(recur,tuple(expr.exps)),env,cc)
+        return value_of_k(Primitive_Exp('list',tuple(expr.exps)),env,cc)
     elif isinstance(expr,Let_Star_Exp):
         def recur(vars,exprs):
             if vars == ():

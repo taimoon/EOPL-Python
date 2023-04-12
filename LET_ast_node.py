@@ -24,6 +24,11 @@ class Diff_Exp:
     right:typing.Any
 
 @dataclass
+class Primitve_Implementation:
+    op:typing.Any
+    env:typing.Any = None
+
+@dataclass
 class Primitive_Exp:
     op:typing.Any
     exps:typing.Any

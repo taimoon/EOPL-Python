@@ -51,14 +51,7 @@ def p_unary_exp(p):
          | CAR '(' expr ')'
          | CDR '(' expr ')'
     """
-    from operator import sub
-    corspd = {
-        'ZERO_TEST': Zero_Test_Exp,
-        'MINUS' : lambda exp : Primitive_Exp(sub,(Const_Exp(0),exp)),
-        'CAR' : lambda exp : Primitive_Exp(lambda t: t.car,(exp,)),
-        'CDR' : lambda exp : Primitive_Exp(lambda t: t.cdr,(exp,)),
-    }
-    p[0] =  corspd[reserved[p[1]]](p[3])
+    p[0] = Primitive_Exp(p[1],(p[3],))
 
 def p_bi_exp(p):
     """expr : '-' '(' expr ',' expr ')'
@@ -71,25 +64,11 @@ def p_bi_exp(p):
             | CONS '(' expr ',' expr ')' 
             | '-' expr
         """
-    from operator import add,sub,mul,truediv,gt,lt,eq,mod
     match tuple(p): 
         case (None, op,'(',left ,',' ,right,')'):
-            # if op == '-':
-            #     p[0] = Diff_Exp(left,right)
-            #     return
-            corspd = {'-': sub,
-                      '+': add,
-                      '*': mul,
-                      '/': truediv,
-                      'GREATER_TEST':gt,
-                      'LESS_TEST':lt,
-                      'EQUAL_TEST': eq,
-                      'CONS': lambda x,y: Pair(x,y),}
-            op = reserved.get(op, op)
-            p[0] =  Primitive_Exp(corspd[op], (left,right))
+            p[0] = Primitive_Exp(op,(left,right))
         case (None, '-', expr): # as derived form
             p[0] = Diff_Exp(Const_Exp(0), expr)
-            # p[0] = Primitive_Exp(sub,(Const_Exp(0), expr))
 
 def p_list_exp(p):
     """

@@ -1,5 +1,5 @@
-from LET import *
-# from LET_cc import *
+# from LET import *
+from LET_cc import *
 # from NAMELESS_LET import *
 # from EXPLICIT_REFS import *
 import sys
@@ -7,7 +7,7 @@ sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
 
 def test_env():
-    env = empty_env()
+    env = init_env()
     env = extend_env('i', 1, env)
     env = extend_env('v', 5, env)
     env = extend_env('x', 10, env)
@@ -16,7 +16,7 @@ def test_env():
     assert(apply_env(env,'x') == 10)
 
 def test_diff_exp():
-    env = empty_env()
+    env = init_env()
     env = extend_env('i', 1, env)
     env = extend_env('v', 5, env)
     env = extend_env('x', 10, env)
@@ -65,7 +65,7 @@ def test_other_repr():
     assert(value_of_prog(prog,parse=parse_LET_lang) == -5)
 
 def test_if():
-    env = empty_env()
+    env = init_env()
     env = extend_env('x',33, 
                     extend_env('y',22, env))
     prog = 'if zero?(-(x,11)) then -(y,2)  else -(y,4)'
@@ -361,8 +361,8 @@ if __name__ == '__main__':
     test_proc_dynamic()
     test_proc_multi()
     test_y_combinator()
-    # test_letrec()
-    # test_letrec_multi()
+    test_letrec()
+    test_letrec_multi()
     
     # test_other_repr()
     print('pass all test')
