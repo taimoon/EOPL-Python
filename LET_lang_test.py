@@ -5,7 +5,7 @@ from LET_cc import *
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
-# testing
+
 def test_env():
     env = init_env()
     env = extend_env('i', 1, env)
