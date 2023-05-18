@@ -1,4 +1,5 @@
-import ply.yacc as yacc
+# import ply.yacc as yacc
+import ply.ply.yacc as yacc
 # Get the token map from the lexer.  This is required.
 from LET_lexer import tokens, reserved
 from LET_ast_node import *

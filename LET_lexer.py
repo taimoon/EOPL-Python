@@ -1,4 +1,5 @@
-import ply.lex as lex
+# import ply.lex as lex
+import ply.ply.lex as lex
 # PLS READ THE LINK TO THE DOC BEFORE MODIFYING
 'https://www.dabeaz.com/ply/ply.html'
 
