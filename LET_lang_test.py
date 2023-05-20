@@ -1,7 +1,10 @@
-# from LET import *
-# from LET_cc import *
-from NAMELESS_LET import *
-# from EXPLICIT_REFS import *
+# exclude other_repr_test, dynamic test
+# from LET import *           # all test
+# from NAMELESS_LET import *  # except  recursion
+# from EXPLICIT_REFS import * # all test
+# from IMPLICIT_REFS import *
+from LET_cc import *        # all test
+
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
@@ -231,6 +234,11 @@ def test_unpack_op():
         in unpack x y = cons(u,cons(3,emptylist))
             in -(x,y)'''
     assert(value_of_prog(prog) == 4)
+    prog = '''\
+        let add = proc(x,y) -(x,-y)
+        in (add unpack(list(3,4)))
+        '''
+    assert(value_of_prog(prog) == 7)
 
 def test_y_combinator():
     # y combinator might be too deep for python
@@ -288,6 +296,7 @@ def test_letrec():
         = if zero? (x) then 0 else -((mult -(x,1) y), -(0,y))
     in (mult 11 11)'''
     assert(value_of_prog(prog) == 11*11)
+    
     prog = '''\
     letrec mult (x,y)
         = if zero? (x) then 0 else -((mult -(x,1) y), -(0,y))
@@ -345,9 +354,24 @@ def test_letrec_multi():
     ans = sum([i for i in range(6+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
     
+def test_letrec2():
+    prog = '''\
+        letrec fact (n) = if zero?(n) then 1 else *(n,(fact -(n,1)))
+        in (fact 4)
+    '''
+    from math import factorial
+    assert(value_of_prog(prog) == factorial(4))
     
+    prog = '''\
+        letrec fact_iter (n,acm) = if zero?(n) then acm else (fact_iter -(n,1) *(n,acm))
+        in let fact = proc (x) (fact_iter x 1) in
+            (fact 4)
+    '''
+    assert(value_of_prog(prog) == factorial(4))
 
-if __name__ == '__main__':
+def main():
+    test_letrec2()
+    return
     test_env()
     test_diff_exp()
     test_if()
@@ -356,16 +380,22 @@ if __name__ == '__main__':
     test_let_multi()
     test_let_star()
     test_dat_struct()
-    # test_unpack_op()
+    test_unpack_op()
     test_bi_exp()
     
     test_proc_1()
-    test_proc_dynamic()
+    # test_proc_dynamic()
     test_proc_multi()
     test_y_combinator()
-    # test_letrec()
-    # test_letrec_multi()
+    test_letrec()
+    test_letrec2()
+    test_letrec_multi()
     
     # test_other_repr()
     print('pass all test')
+
+if __name__ == '__main__':
+    main()
+    
+    
 

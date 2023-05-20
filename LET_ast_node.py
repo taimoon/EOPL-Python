@@ -7,7 +7,6 @@ class Branch:
     conseq:typing.Any
     alter:typing.Any
 
-    
 @dataclass
 class Clause:
     pred:typing.Any
@@ -20,11 +19,13 @@ class Conditional:
 
 @dataclass
 class Diff_Exp:
+    'Deprecated : As derived form using Primitive_Exp; see LET_parser'
     left:typing.Any
     right:typing.Any
 
 @dataclass
 class Primitve_Implementation:
+    'interpreter data struct'
     op:typing.Any
     env:typing.Any = None
 
@@ -35,6 +36,7 @@ class Primitive_Exp:
     
 @dataclass
 class Zero_Test_Exp:
+    'Deprecated : As derived form using Primitive_Exp; see LET_parser'
     exp:typing.Any
 
 @dataclass
@@ -64,6 +66,7 @@ class Proc_Exp:
 
 @dataclass
 class Proc_Val:
+    'interpreter data struct'
     params:typing.Any
     body:typing.Any
     env:typing.Any
@@ -84,7 +87,7 @@ class App_Exp:
 class Pair:
     car: typing.Any
     cdr: typing.Any
-    def unpack(self):
+    def unpack(self) -> tuple:
         if isinstance(self.cdr,NULL):
             return (self.car,)
         else:
@@ -118,23 +121,25 @@ class NULL:
 
 @dataclass
 class Unpack_Exp:
+    'interpreter data struct'
+    'but also AST'
     vars:typing.Any
     list_expr:typing.Any
     expr:typing.Any
 
 @dataclass
 class Nameless_Var_Exp:
+    'nameless LET data structure'
     id:int
 
 @dataclass
 class Nameless_Proc_Exp:
+    'nameless LET data structure'
     body:typing.Any
-
 
 @dataclass
 class Sequence:
     exps:typing.Any
-    
     
 @dataclass
 class NewRef:

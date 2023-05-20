@@ -6,36 +6,37 @@ import ply.ply.lex as lex
 # tokens list
 
 reserved = {
-   'if' : 'IF',
-   'then' : 'THEN',
-   'else' : 'ELSE',
-   'let' : 'LET',
-   'unpack': 'UNPACK',
-   'in' : 'IN',
-   'proc': 'PROC',
-   'begin': 'BEGIN',
+   'if'     : 'IF',
+   'then'   : 'THEN',
+   'else'   : 'ELSE',
+   'let'    : 'LET',
+   'unpack' : 'UNPACK',
+   'in'     : 'IN',
+   'proc'   : 'PROC',
+   'begin'  : 'BEGIN',
    'letrec' : 'LETREC',
-   'let*': 'LET_STAR',
+   'let*'   : 'LET_STAR',
+   'cond'   : 'COND',
+   'end'    : 'END',
    'emptylist': 'NULL',
-   'cond': 'COND',
-   'end': 'END',
    
-   'zero?': 'ZERO_TEST',
-   'minus': 'MINUS',
-   'cdr' : 'CDR',
-   'car' : 'CAR',
+   'zero?' : 'ZERO_TEST',
+   'minus' : 'MINUS',
+   'cdr'   : 'CDR',
+   'car'   : 'CAR',
    
    
-   'less?': 'LESS_TEST',
+   'less?'    : 'LESS_TEST',
    'greater?' : 'GREATER_TEST',
-   'equal?': 'EQUAL_TEST',
-   'cons' : 'CONS',
+   'equal?'   : 'EQUAL_TEST',
+   'cons'     : 'CONS',
    
-   'list': 'LIST',
+   'list'   : 'LIST',
    
-   'newref':'NEWREF',
-   'deref' : 'DEREF',
-   'setref': 'SET',
+   'newref' : 'NEWREF',
+   'deref'  : 'DEREF',
+   'setref' : 'SETREF',
+   'set'    : 'SET',
 }
 tokens = "NUMBER ID RIGHTARROW".split() + list(reserved.values())
 
@@ -43,8 +44,6 @@ tokens = "NUMBER ID RIGHTARROW".split() + list(reserved.values())
 literals = '-+*/,=();'
 
 # Specification of tokens
-# t_LPAREN = r'\('
-# t_RPAREN = r'\)'
 t_RIGHTARROW = r'\=>'
 
 def t_ID(t):

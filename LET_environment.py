@@ -63,12 +63,21 @@ class Environment:
         params:None
         body:None
         delayed_env:None
-        @property
-        def val(self):
-            return Proc_Val(self.params,self.body,self.delayed_env())
+        # @property
+        # def val(self):
+        #     return Proc_Val(self.params,self.body,self.delayed_env())
+    @dataclass
+    class Referenced_Rec_Proc:
+        params:None
+        body:None
+        delayed_env:None
     
     def __str__(self) -> str:
         return f'(env {str(tuple(p[0] for p in self.env))})'
+    
+    def memory_mapping(self):
+        return {k:(v if isinstance(v,int) else type(v).__name__) for k,v in self.env}
+            
     
     def extend(self,var,val):
         pair = (var,val)
@@ -76,11 +85,20 @@ class Environment:
     
     def apply(self,src_var):
         for var,val in self.env:
-            if var == src_var:
-                if isinstance(val,self.Delayed_Rec_Proc):
-                    return val.val
-                else:
-                    return val
+            if var != src_var:
+                continue
+            if isinstance(val,self.Delayed_Rec_Proc):
+                return Proc_Val(val.params,val.body,val.delayed_env())
+                # return val.val
+            elif isinstance(val,self.Referenced_Rec_Proc):
+                from memory import newref
+                # also work but not test cases to show it doesn't work
+                # newref(Proc_Val(val.params,val.body,self)) 
+                # either I must write a test to test the lexical scoping
+                # nevertheless, the program still capture the closure.
+                return newref(Proc_Val(val.params,val.body,val.delayed_env()))
+            else:
+                return val
         raise Exception("Unbound variable",src_var,f"env - {self.env}")
     
     def extend_rec(self,var,params,body):
@@ -91,13 +109,20 @@ class Environment:
     def extend_env_rec_multi(self,vars,paramss,bodys):
         # don't nest delayed_fn into recur
         delayed_fn = lambda:self.extend_env_rec_multi(vars,paramss,bodys) 
-        def recur(vars,paramss,bodys):
-            if vars == ():
-                return self
-            else:
-                val = self.Delayed_Rec_Proc(paramss[0],bodys[0],delayed_fn)
-                return recur(vars[1:],paramss[1:],bodys[1:]).extend(vars[0],val)
-        return recur(vars,paramss,bodys)
+        env = self
+        for var,params,body in zip(vars,paramss,bodys):
+            val = self.Delayed_Rec_Proc(params,body,delayed_fn)
+            env = env.extend(var,val)
+        return env
+    
+    def extend_env_rec_ref(self,vars,paramss,bodys):
+        delayed_fn = lambda:self.extend_env_rec_ref(vars,paramss,bodys)
+        env = self
+        for var,params,body in zip(vars,paramss,bodys):
+            val = self.Referenced_Rec_Proc(params,body,delayed_fn)
+            env = env.extend(var,val)
+        return env
+
 
 def empty_env():
     return Environment()
@@ -111,15 +136,18 @@ def extend_env_rec(var,params,body,env:Environment):
 def extend_env_rec_multi(vars,paramss,bodys,env:Environment):      
     return env.extend_env_rec_multi(vars,paramss,bodys)
 
+def extend_env_rec_ref(vars,paramss,bodys,env:Environment):
+    return env.extend_env_rec_ref(vars,paramss,bodys)
+    
 def apply_env(env:Environment,var):
     return env.apply(var)
 
 def init_env():
-    def recur(*args):
+    def list_to_pair(*args):
             if args == ():
                 return NULL()
             else:
-                return Pair(args[0], recur(*args[1:]))
+                return Pair(args[0], list_to_pair(*args[1:]))
     from operator import sub,add,mul,truediv,gt,lt,eq
     corspd = {'-': sub,
             '+': add,
@@ -133,7 +161,8 @@ def init_env():
             'minus' : lambda exp : - exp,
             'car' : lambda t: t.car,
             'cdr' : lambda t: t.cdr,
-            'list':recur,}
+            'list':list_to_pair,
+            }
     env = empty_env()
     for var,val in corspd.items():
         env = extend_env(var,Primitve_Implementation(val),env)

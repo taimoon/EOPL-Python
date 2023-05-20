@@ -1,27 +1,28 @@
 from LET_parser import *
 from LET_environment import *
-
+from memory import *
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
-    return value_of(parse(prog), env)
+    init_store()
+    # another day, another workaround
+    new_env = empty_env()
+    for var,val in env.env:
+        new_env = extend_env(var,newref(val),new_env)
+    return value_of(parse(prog), new_env)
 
-def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
+def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env:Environment):
     if isinstance(proc,Primitve_Implementation):
         return proc.op(*args)
     for param,arg in zip(proc.params,args):
-        env = extend_env(param,arg,env)
+        env = extend_env(param,newref(arg),env)
     if isinstance(proc,Proc_Val):
         return value_of(proc.body, env)
     
-
-def apply_primitive(prim:Primitive_Exp,args):
-    return prim.op(*args)
-
-def value_of(expr, env):    
+def value_of(expr, env):
     if isinstance(expr, Const_Exp):
         return expr.val
     elif isinstance(expr, Var_Exp):
-        return apply_env(env, expr.var)  
+        return deref(apply_env(env, expr.var))
     elif isinstance(expr, Diff_Exp):
         return value_of(expr.left,env) - value_of(expr.right,env)
     elif isinstance(expr, Zero_Test_Exp):
@@ -43,19 +44,24 @@ def value_of(expr, env):
         # return apply_proc(proc,args,env) # dynamic scoping
         return apply_proc(proc,args,proc.env) # lexical scoping
     elif isinstance(expr, Rec_Proc):
-        return value_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,env))
-    # Derived Form
-    elif isinstance(expr,Let_Exp):
-        # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
-        # as derived form
-        return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
-    elif isinstance(expr,Let_Star_Exp):
-        def expand(vars,exprs):
-            if vars == ():
-                return expr.body
-            else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
-        return value_of(expand(expr.vars,expr.exps),env)
+        # extend_env_rec_ref(expr.var,expr.params,expr.body,env)
+        return value_of(expr.expr, extend_env_rec_ref(expr.var,expr.params,expr.body,env))
+    elif isinstance(expr,Sequence):
+        val = None
+        for exp in expr.exps:
+            val = value_of(exp,env)
+        return val
+    elif isinstance(expr,NewRef):
+        return newref(value_of(expr.expr,env))
+    elif isinstance(expr,DeRef):
+        return deref(value_of(expr.expr,env))
+    elif isinstance(expr,SetRef):
+        ref = value_of(expr.loc,env)
+        val = value_of(expr.expr,env)
+        return setref(ref,val)
+    # derived form
+    elif isinstance(expr, Primitive_Exp):
+        return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause]):
             if clauses[1:] == ():
@@ -67,44 +73,24 @@ def value_of(expr, env):
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return value_of(expand(expr.clauses),env)
-    elif isinstance(expr, Primitive_Exp):
-        return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr,List):
-        # List is nested pair; see LET_environment.py
-        return value_of(Primitive_Exp('list',expr.exps),env)
+        return value_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
         return value_of(App_Exp(operator = Proc_Exp(expr.vars,expr.expr),
                                 operand  = (Unpack_Exp(None,expr.list_expr,None),)
                                 ),env)
+    elif isinstance(expr,Let_Exp):
+        # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
+        # as derived form
+        return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
+    elif isinstance(expr,Let_Star_Exp):
+        def expand(vars,exprs):
+            if vars == ():
+                return expr.body
+            else:
+                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+        return value_of(expand(expr.vars,expr.exps),env)
     else:
         raise Exception("Uknown LET expression type", expr)
-
-
-def parse_LET_lang(prog):
-    # s-list syntax parser
-    from list_parser import parse, Atom
-    def recur(expr):
-        match expr:
-            case x if isinstance(x, Atom):
-                return Const_Exp(x.val)
-            case x if isinstance(x,str):
-                if x == 'True' or x == 'False':
-                    return Const_Exp(eval(x))
-                else:
-                    return Var_Exp(x)
-            case x if isinstance(x,str):
-                return Var_Exp(x)
-            case ('-', exp1, exp2):
-                return Diff_Exp(recur(exp1), recur(exp2))
-            case ('zero?', exp):
-                return Zero_Test_Exp(recur(exp))
-            case ('if', pred, conseq, alter):
-                return Branch(recur(pred), recur(conseq), recur(alter))
-            case ('let', (var, exp), body):
-                return Let_Exp(var, recur(exp), recur(body))
-            case _:
-                raise Exception("Unknown LET expression", expr)
-    
-    return recur(parse(prog))

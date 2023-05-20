@@ -97,10 +97,14 @@ def p_branch(p):
     p[0] =  Branch(p[2],p[4],p[6])
 
 def p_unpack_exp(p):
-    "expr : UNPACK vars '=' expr IN expr"
-    p[0],_unpack,vars,_assign,list_expr,_in,expr = p
-
-    p[0] =  Unpack_Exp(vars,list_expr,expr)
+    """expr : UNPACK vars '=' expr IN expr
+            | UNPACK '(' expr ')'
+            """
+    match tuple(p):
+        case (None,UNPACK,vars,'=',list_expr,_,expr):
+            p[0] =  Unpack_Exp(vars,list_expr,expr)
+        case (None,UNPACK, '(',expr,')'):
+            p[0] = Unpack_Exp(None,expr,None)
 
 def p_unpack_vars(p):
     '''vars : ID
@@ -215,16 +219,20 @@ def p_memory_exp(p):
     """\
     expr : NEWREF '(' expr ')'
         | DEREF '(' expr ')'
-        | SET '(' expr ',' expr ')'
+        | SETREF '(' expr ',' expr ')'
     """
     p[1] = reserved[p[1]]
     match tuple(p)[1:]:
-        case ('SET','(', loc, ',', expr,')'):
+        case ('SETREF','(', loc, ',', expr,')'):
             p[0] = SetRef(loc,expr)
         case ('DEREF', '(',expr,')'):
             p[0] = DeRef(expr)
         case ('NEWREF', '(',expr,')'):
             p[0] = NewRef(expr)
+
+def p_set_exp(p):
+    """expr : SET ID '=' expr"""
+    p[0],_set,var,_assign,expr = p
 
 # Error rule for syntax errors
 def p_error(p):

@@ -2,6 +2,8 @@ from LET_parser import *
 from LET_environment import *
 from LET_ast_node import *
 # TODO : handling letrec
+# TODO : recursion
+
 def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
     # workaround
     # so that it can use the same test cases used by other LET variants.
@@ -48,9 +50,14 @@ def translation_of(expr,static_env):
         return Nameless_Proc_Exp(translation_of(expr.body,new_senv))
     elif isinstance(expr, App_Exp):
         proc = translation_of(expr.operator,static_env)
-        args = map(lambda o : translation_of(o, static_env), expr.operand)
-        return App_Exp(proc,tuple(args))
-    elif isinstance(expr, Rec_Proc): # TODO
+        if expr.operand != () and isinstance(expr.operand[0],Unpack_Exp):
+            args = translation_of(expr.operand[0].list_expr,static_env)
+            args = (Unpack_Exp(None,args,None),)
+        else:
+            args = map(lambda o : translation_of(o, static_env), expr.operand)
+            args = tuple(args)
+        return App_Exp(proc,args)
+    elif isinstance(expr, Rec_Proc):
         return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
@@ -74,6 +81,12 @@ def translation_of(expr,static_env):
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return translation_of(expand(expr.clauses),static_env)
+    elif isinstance(expr,Unpack_Exp):
+        # TODO : making this as derived form
+        return translation_of(App_Exp(Proc_Exp(expr.vars,expr.expr),
+                                      (Unpack_Exp(None,expr.list_expr,None),)),
+                              static_env)
+        return translation_of(App_Exp(Proc_Exp(expr.vars,expr.expr),expr.list_expr),static_env)
     else:
         raise Exception("Uknown LET expression type", expr)
 
@@ -98,7 +111,10 @@ def value_of(expr, nameless_env):
         return Proc_Val(None,expr.body,nameless_env)
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,nameless_env)
-        args = map(lambda o : value_of(o, nameless_env), expr.operand)
+        if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
+            args = value_of(expr.operand[0].list_expr,nameless_env).unpack()
+        else:
+            args = map(lambda o : value_of(o, nameless_env), expr.operand)
         return apply_proc(proc,args)
     else:
         raise Exception("Uknown LET expression type", expr)
