@@ -1,9 +1,6 @@
 # exclude other_repr_test, dynamic test
-# from LET import *           # all test
-# from NAMELESS_LET import *  # except  recursion
-# from EXPLICIT_REFS import * # all test
-# from IMPLICIT_REFS import *
-from LET_cc import *        # all test
+
+
 
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
@@ -55,6 +52,7 @@ def test_bi_exp():
     assert(value_of_prog(prog) == True)
 
 def test_other_repr():
+    from LET import parse_LET_lang
     prog = '(let (z 5) (let (x 3) (let (y (- x 1)) (let (x 4) (- z (- x y)))))))'
     assert(value_of_prog(prog,parse=parse_LET_lang) == 3)
     prog = '''
@@ -221,6 +219,12 @@ def test_dat_struct():
     assert(str(value_of_prog(prog)) == '(1 2 3 4)')
     
     prog = '''\
+        list(list(1,2),list(3,4))'''
+    assert(str(value_of_prog(prog)) == '((1 2) (3 4))')
+    prog = '''\
+        list(cons(1,2),cons(3,4))'''
+    assert(str(value_of_prog(prog)) == '((1 . 2) (3 . 4))')
+    prog = '''\
         let x = 4
         in list(x,-(x,1), -(x,3))'''
     assert(str(value_of_prog(prog)) == '(4 3 1)')
@@ -369,9 +373,7 @@ def test_letrec2():
     '''
     assert(value_of_prog(prog) == factorial(4))
 
-def main():
-    test_letrec2()
-    return
+def main(recur=True):
     test_env()
     test_diff_exp()
     test_if()
@@ -387,15 +389,25 @@ def main():
     # test_proc_dynamic()
     test_proc_multi()
     test_y_combinator()
-    test_letrec()
-    test_letrec2()
-    test_letrec_multi()
     
+    if recur == True:
+        test_letrec()
+        test_letrec2()
+        test_letrec_multi()
+        
     # test_other_repr()
     print('pass all test')
 
 if __name__ == '__main__':
+    from LET import *           # all test
     main()
-    
-    
-
+    from LET_cc import * 
+    main()
+    from NAMELESS_LET import *  # except  recursion
+    main(recur=False)
+    from EXPLICIT_REFS import * # all test
+    main()
+    from IMPLICIT_REFS import * # all test
+    main()
+    from LET_cc import *        # all test
+    main()

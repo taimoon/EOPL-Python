@@ -1,6 +1,6 @@
 from LET_parser import *
 from LET_environment import *
-
+TRACE = True
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return value_of(parse(prog), env)
@@ -27,7 +27,8 @@ def value_of(expr, env):
     elif isinstance(expr, Zero_Test_Exp):
         return value_of(expr.exp,env) == 0
     elif isinstance(expr, Branch):
-        if value_of(expr.pred,env):
+        # if value_of(expr.pred,env):
+        if value_of(expr.pred,env) != 0:
             return value_of(expr.conseq,env)
         else:
             return value_of(expr.alter,env)
@@ -69,9 +70,6 @@ def value_of(expr, env):
         return value_of(expand(expr.clauses),env)
     elif isinstance(expr, Primitive_Exp):
         return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
-    elif isinstance(expr,List):
-        # List is nested pair; see LET_environment.py
-        return value_of(Primitive_Exp('list',expr.exps),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")

@@ -1,5 +1,5 @@
 # import ply.lex as lex
-import ply.ply.lex as lex
+import ply.lex as lex
 # PLS READ THE LINK TO THE DOC BEFORE MODIFYING
 'https://www.dabeaz.com/ply/ply.html'
 
@@ -10,20 +10,22 @@ reserved = {
    'then'   : 'THEN',
    'else'   : 'ELSE',
    'let'    : 'LET',
-   'unpack' : 'UNPACK',
    'in'     : 'IN',
    'proc'   : 'PROC',
    'begin'  : 'BEGIN',
    'letrec' : 'LETREC',
+   'letmutable' : 'LETMUT',
    'let*'   : 'LET_STAR',
    'cond'   : 'COND',
    'end'    : 'END',
    'emptylist': 'NULL',
+   'unpack' : 'UNPACK',
    
    'zero?' : 'ZERO_TEST',
    'minus' : 'MINUS',
    'cdr'   : 'CDR',
    'car'   : 'CAR',
+   'print' : 'PRINT',
    
    
    'less?'    : 'LESS_TEST',
@@ -37,11 +39,13 @@ reserved = {
    'deref'  : 'DEREF',
    'setref' : 'SETREF',
    'set'    : 'SET',
+   'setcar': 'SETCAR',
+   'setcdr': 'SETCDR',
 }
 tokens = "NUMBER ID RIGHTARROW".split() + list(reserved.values())
 
 # literals
-literals = '-+*/,=();'
+literals = r'-+*/,=();{}'
 
 # Specification of tokens
 t_RIGHTARROW = r'\=>'

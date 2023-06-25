@@ -142,7 +142,7 @@ def extend_env_rec_ref(vars,paramss,bodys,env:Environment):
 def apply_env(env:Environment,var):
     return env.apply(var)
 
-def init_env():
+def get_all_primitive_implementation():
     def list_to_pair(*args):
             if args == ():
                 return NULL()
@@ -162,7 +162,11 @@ def init_env():
             'car' : lambda t: t.car,
             'cdr' : lambda t: t.cdr,
             'list':list_to_pair,
+            'print':lambda v: print(v),
             }
+    return corspd
+
+def init_env(corspd=get_all_primitive_implementation()):
     env = empty_env()
     for var,val in corspd.items():
         env = extend_env(var,Primitve_Implementation(val),env)

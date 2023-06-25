@@ -33,7 +33,15 @@ class Primitve_Implementation:
 class Primitive_Exp:
     op:typing.Any
     exps:typing.Any
-    
+
+@dataclass
+class Bi_Op:
+    op:typing.Any
+
+@dataclass
+class Unary_Op:
+    op:typing.Any
+
 @dataclass
 class Zero_Test_Exp:
     'Deprecated : As derived form using Primitive_Exp; see LET_parser'
@@ -87,6 +95,12 @@ class App_Exp:
 class Pair:
     car: typing.Any
     cdr: typing.Any
+    def __iter__(self):
+        if isinstance(self.cdr,NULL):
+            yield self.car
+        else:
+            yield self.car
+            yield from self.cdr
     def unpack(self) -> tuple:
         if isinstance(self.cdr,NULL):
             return (self.car,)
@@ -110,6 +124,57 @@ class Pair:
         if start:
             x = '(' + x
         return x + ' ' + self.cdr.__str__(False)
+
+from memory import newref,deref,setref
+@dataclass(init=False)
+class Mutable_Pair:
+    _car: typing.Any
+    _cdr: typing.Any
+    
+    def __init__(self,left,right):
+        self._car = newref(left)
+        self._cdr = newref(right)
+    
+    def setcar(self,v):
+        setref(self._car,v)
+    
+    def setcdr(self,v):
+        setref(self._cdr,v)
+    
+    @property
+    def car(self):
+        return deref(self._car)
+    
+    @property
+    def cdr(self):
+        return deref(self._cdr)
+
+    def __iter__(self):
+        if isinstance(self.cdr,NULL):
+            yield self.car
+        else:
+            yield self.car
+            yield from self.cdr
+    
+    def __str__(self,start=True) -> str:
+        if isinstance(self.cdr, NULL):
+            if start:
+                return f'({self.car})'
+            else:
+                return f'{self.car})'
+        
+        if not isinstance(self.cdr, Mutable_Pair):
+            x = f'({self.car} . {self.cdr})'
+            if start:
+                return x
+            else:
+                return x + ')'
+        
+        x = str(self.car)
+        if start:
+            x = '(' + x
+        return x + ' ' + self.cdr.__str__(False)
+    
 
 @dataclass
 class List:
@@ -153,3 +218,14 @@ class DeRef:
 class SetRef:
     loc:typing.Any
     expr:typing.Any
+
+@dataclass
+class Assign_Exp:
+    var:None
+    expr:None
+
+@dataclass
+class Letmutable_Exp:
+    vars:str
+    exps:typing.Any
+    body:typing.Any

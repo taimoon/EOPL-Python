@@ -1,3 +1,4 @@
+from typing import Any
 from LET_parser import *
 from LET_environment import *
 
@@ -6,10 +7,26 @@ def end_cc(val):
     return val
 
 def apply_cont(cc,val):
-    return cc(val)
+    # incorrect : lambda: cc(val) if cc is not end_cc else lambda: val
+    bounce = lambda: cc(val)
+    bounce.val = val
+    bounce.cc = cc
+    # workaround
+    # so that trampoline can return the value
+    # without checking whether the value is ExpVal.
+    # This exploits the fact that function python is object.
+    return bounce
+
+def trampoline(bounce):
+    if bounce.cc is end_cc:
+        return bounce.val
+    else:
+        return trampoline(bounce())
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
-    return value_of_k(parse(prog),env,end_cc)
+    return trampoline(value_of_k(parse(prog),env,end_cc))
+
+
 
 def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
     if isinstance(proc,Primitve_Implementation):
@@ -53,9 +70,11 @@ def value_of_k(expr, env,cc):
         if expr.operand == ():
             return value_of_k(expr.operator,env,lambda op_val: apply_proc_k(op_val,[],cc))
         elif isinstance(expr.operand[0], Unpack_Exp):
-            unpack_op = lambda: value_of_k(expr.operand[0].list_expr,env,cc).unpack()
-            nxt_cc = lambda op_val: apply_proc_k(op_val,unpack_op(),cc)
-            return value_of_k(expr.operator,env,nxt_cc) 
+            def operand_cc_ctor(op_val,cc=cc):
+                return lambda operand: apply_proc_k(op_val,operand,cc)
+            def operator_cc_ctor(list_expr,env=env):
+                return lambda op_val: value_of_k(list_expr,env,operand_cc_ctor(op_val))
+            return value_of_k(expr.operator,env,operator_cc_ctor(expr.operand[0].list_expr))
         else:
             return args_builder((expr.operator,) + tuple(expr.operand),[])
     elif isinstance(expr, Rec_Proc):

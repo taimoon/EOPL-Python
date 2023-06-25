@@ -1,4 +1,9 @@
+from dataclasses import dataclass
 the_store = []
+
+@dataclass
+class Immutable:
+    val:None
 
 def empty_store():
     return []
