@@ -1,6 +1,7 @@
-from LET_parser import *
+from LET_ast_node import *
+from LET_parser import parser
 from LET_environment import *
-TRACE = True
+
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return value_of(parse(prog), env)
@@ -10,9 +11,7 @@ def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
         return proc.op(*args)
     for param,arg in zip(proc.params,args):
         env = extend_env(param,arg,env)
-    if isinstance(proc,Proc_Val):
-        return value_of(proc.body, env)
-    
+    return value_of(proc.body, env)
 
 def apply_primitive(prim:Primitive_Exp,args):
     return prim.op(*args)
@@ -38,7 +37,7 @@ def value_of(expr, env):
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,env)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
-            args = value_of(expr.operand[0].list_expr,env).unpack()
+            args = value_of(expr.operand[0].list_expr,env)
         else:
             args = map(lambda o : value_of(o, env), expr.operand)
         # return apply_proc(proc,args,env) # dynamic scoping

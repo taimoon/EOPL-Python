@@ -93,6 +93,10 @@ class App_Exp:
 
 @dataclass
 class Pair:
+    '''Pair is a recursive data structure that form list and tree.
+    The __iter__ yield its data that's similiar to __iter__(list)
+    This allows the original interpreter's procedure application can use the same "for in" statements to unload the arguments for both tuple and List. 
+    '''
     car: typing.Any
     cdr: typing.Any
     def __iter__(self):
@@ -101,11 +105,7 @@ class Pair:
         else:
             yield self.car
             yield from self.cdr
-    def unpack(self) -> tuple:
-        if isinstance(self.cdr,NULL):
-            return (self.car,)
-        else:
-            return  (self.car,) + self.cdr.unpack()
+
     def __str__(self,start=True) -> str:
         if isinstance(self.cdr, NULL):
             if start:
@@ -124,6 +124,7 @@ class Pair:
         if start:
             x = '(' + x
         return x + ' ' + self.cdr.__str__(False)
+
 
 from memory import newref,deref,setref
 @dataclass(init=False)
@@ -218,6 +219,10 @@ class DeRef:
 class SetRef:
     loc:typing.Any
     expr:typing.Any
+    
+@dataclass
+class Ref:
+    var:typing.Any
 
 @dataclass
 class Assign_Exp:
@@ -229,3 +234,9 @@ class Letmutable_Exp:
     vars:str
     exps:typing.Any
     body:typing.Any
+
+@dataclass
+class Thunk:
+    'lazy interpreter data structure'
+    expr:typing.Any
+    env:typing.Any

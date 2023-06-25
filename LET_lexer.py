@@ -35,6 +35,7 @@ reserved = {
    
    'list'   : 'LIST',
    
+   'ref'    : 'REF',
    'newref' : 'NEWREF',
    'deref'  : 'DEREF',
    'setref' : 'SETREF',

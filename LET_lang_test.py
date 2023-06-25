@@ -1,7 +1,3 @@
-# exclude other_repr_test, dynamic test
-
-
-
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
@@ -373,6 +369,95 @@ def test_letrec2():
     '''
     assert(value_of_prog(prog) == factorial(4))
 
+def test_swap():
+    prog = '''\
+    letmutable f = proc (x) set x = 44
+    in letmutable g = proc (y) (f y)
+        in letmutable z = 55
+            in begin (g z); z end
+    '''
+    assert(value_of_prog(prog) == 44)
+    prog = '''\
+    let swap = proc (x,y)
+        let temp = x
+        in begin
+            set x = y;
+            set y = temp
+            end
+    in letmutable a = 33
+           b = 44
+        in begin
+            (swap a b);
+            -(a,b)
+            end
+    '''
+    assert(value_of_prog(prog) == 11)
+    prog = '''\
+    let swap = proc (x,y)
+        let temp = deref(x)
+        in begin
+            setref(x,deref(y));
+            setref(y,temp)
+            end
+    in letmutable a = 33
+           b = 44
+        in begin
+            (swap ref(a) ref(b));
+            -(a,b)
+            end
+    '''
+    assert(value_of_prog(prog) == 11)
+    
+def test_sequence():
+    prog = '''\
+    let g = let counter = newref(0)
+            in proc (dummy)
+                begin
+                setref(counter, -(deref(counter), -1));
+                deref(counter)
+                end
+        in let a = (g 11)
+            in let b = (g 11)
+                in -(a,b)
+    '''
+    assert(value_of_prog(prog) == -1)
+    
+    prog = '''\
+    let x = newref(0)
+    in letrec even(dummy)
+                = if zero?(deref(x))
+                then 1
+                else begin
+                setref(x, -(deref(x),1));
+                (odd 888)
+                end
+            odd(dummy)
+                = if zero?(deref(x))
+                then 0
+                else begin
+                setref(x, -(deref(x),1));
+                (even 888)
+                end
+    in begin setref(x,13); (odd 888) end
+    '''
+    assert(value_of_prog(prog) == 1)
+
+def test_laziness():
+    prog ='''\
+    letrec infinite_loop (x) = (infinite_loop -(x,-1))
+    in let f = proc (z) 11
+        in (f (infinite_loop 0))
+    '''
+    assert(value_of_prog(prog) == 11)
+    prog = '''\
+    letrec infinite_loop () = (infinite_loop) in
+    let
+        my_if = proc (pred,conseq,alter) if pred then conseq else alter
+        d = 0
+    in (my_if zero?(0) 1 (infinite_loop))
+    '''
+    assert(value_of_prog(prog) == 1)
+
 def main(recur=True):
     test_env()
     test_diff_exp()
@@ -400,14 +485,21 @@ def main(recur=True):
 
 if __name__ == '__main__':
     from LET import *           # all test
-    main()
-    from LET_cc import * 
+    print('LET')
     main()
     from NAMELESS_LET import *  # except  recursion
+    print('NAMELESS_LET')
     main(recur=False)
     from EXPLICIT_REFS import * # all test
+    print('EXPLICIT_REFS')
     main()
+    test_sequence()
     from IMPLICIT_REFS import * # all test
+    print('IMPLICIT_REFS')
     main()
-    from LET_cc import *        # all test
+    test_sequence()
+    test_swap()
+    test_laziness()
+    from LET_cc import * 
+    print('LET_cc')
     main()

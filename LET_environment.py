@@ -1,58 +1,4 @@
-from LET_ast_node import Proc_Val
 from LET_ast_node import *
-'''
-# structural representation
-def empty_env():
-    return ('empty')
-def extend_env(var,val,env):
-    return ('extend', var, val, env)
-def extend_env_rec(var,params,body,env):
-    return ('rec-extend', var, params, body, env)
-def apply_env(env, src_var):
-    match env:
-        case ('empty'):
-            raise Exception("reach empty_env; possible error - unbound variable", src_var) 
-        case ('extend',var,val,enclosed_env):
-            if var == src_var:
-                return val
-            else:
-                return apply_env(enclosed_env, src_var)
-        case ('rec-extend', var, params, body, enclosed_env):
-            if var == src_var:
-                matryoshka_env = ('rec-extend', var, params, body, env)
-                return Proc_Val(params,body, matryoshka_env)
-            else:
-                return apply_env(enclosed_env, src_var)
-        case _:
-            raise Exception("Unknown environment type", env)
-'''
-
-'''
-# procedural representation
-def empty_env():
-    def fn(var):
-        raise Exception("reach empty_env; possible error - unbound variable", var)
-    return fn
-
-def extend_env(var,val,env):
-    return lambda search_var: val if var == search_var else env(search_var)
-
-def extend_env_rec(var,params,body,env):
-    # matryoshka_env = lambda search_var: extend_env_rec(var,params,body,env)(search_var)
-    return lambda search_var: Proc_Val(params,body,extend_env_rec(var,params,body,env)) if var == search_var else env(search_var)
-
-def extend_env_rec_multi(vars,paramss,bodys,env):      
-    def recur(search_var):
-            for var,params,body in zip(vars,paramss,bodys):
-                if search_var == var:
-                    return Proc_Val(params,body,extend_env_rec_multi(vars,paramss,bodys,env))
-            return env(search_var)
-    return recur
-
-def apply_env(env,var):
-    return env(var)
-'''
-
 from dataclasses import dataclass
 # Object representation
 @dataclass
@@ -77,8 +23,7 @@ class Environment:
     
     def memory_mapping(self):
         return {k:(v if isinstance(v,int) else type(v).__name__) for k,v in self.env}
-            
-    
+
     def extend(self,var,val):
         pair = (var,val)
         return Environment((pair,) + self.env) # the order here is important
@@ -144,10 +89,17 @@ def apply_env(env:Environment,var):
 
 def get_all_primitive_implementation():
     def list_to_pair(*args):
-            if args == ():
-                return NULL()
-            else:
-                return Pair(args[0], list_to_pair(*args[1:]))
+        if args == ():
+            return NULL()
+        else:
+            return Pair(args[0], list_to_pair(*args[1:]))
+    # rather than using nameless lambda, because these print names
+    def iszero(x): return x == 0
+    def minus(x): return -x
+    def car(t): return t.car
+    def cdr(t): return t.cdr
+    
+    # iszero = lambda x : x == 0
     from operator import sub,add,mul,truediv,gt,lt,eq
     corspd = {'-': sub,
             '+': add,
@@ -156,13 +108,20 @@ def get_all_primitive_implementation():
             'greater?':gt,
             'less?':lt,
             'equal?': eq,
-            'cons': lambda x,y: Pair(x,y),
-            'zero?': lambda x : x == 0,
-            'minus' : lambda exp : - exp,
-            'car' : lambda t: t.car,
-            'cdr' : lambda t: t.cdr,
+            # 'cons': lambda x,y: Pair(x,y),
+            # 'zero?': lambda x : x == 0,
+            # 'minus' : lambda exp : - exp,
+            # 'car' : lambda t: t.car,
+            # 'cdr' : lambda t: t.cdr,
+            # 'list':list_to_pair,
+            # 'print':lambda v: print(v),
+            'cons': Pair,
+            'zero?': iszero,
+            'minus' : minus,
+            'car' : car,
+            'cdr' : cdr,
             'list':list_to_pair,
-            'print':lambda v: print(v),
+            'print':print,
             }
     return corspd
 

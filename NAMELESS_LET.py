@@ -112,7 +112,7 @@ def value_of(expr, nameless_env):
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,nameless_env)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
-            args = value_of(expr.operand[0].list_expr,nameless_env).unpack()
+            args = value_of(expr.operand[0].list_expr,nameless_env)
         else:
             args = map(lambda o : value_of(o, nameless_env), expr.operand)
         return apply_proc(proc,args)

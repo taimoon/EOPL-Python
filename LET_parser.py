@@ -214,18 +214,22 @@ def p_clause_exp(p):
 
 def p_memory_exp(p):
     """\
-    expr : NEWREF '(' expr ')'
+    expr : REF '(' expr ')'
+        | NEWREF '(' expr ')'
         | DEREF '(' expr ')'
         | SETREF '(' expr ',' expr ')'
     """
     p[1] = reserved[p[1]]
     match tuple(p)[1:]:
+        
         case ('SETREF','(', loc, ',', expr,')'):
             p[0] = SetRef(loc,expr)
         case ('DEREF', '(',expr,')'):
             p[0] = DeRef(expr)
         case ('NEWREF', '(',expr,')'):
             p[0] = NewRef(expr)
+        case ('REF', '(',expr,')'):
+            p[0] = Ref(expr)
 
 def p_set_exp(p):
     """expr : SET ID '=' expr"""

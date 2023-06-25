@@ -7,6 +7,7 @@ def end_cc(val):
     return val
 
 def apply_cont(cc,val):
+    'return bounce = lambda: cc()'
     # incorrect : lambda: cc(val) if cc is not end_cc else lambda: val
     bounce = lambda: cc(val)
     bounce.val = val
@@ -27,7 +28,6 @@ def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return trampoline(value_of_k(parse(prog),env,end_cc))
 
 
-
 def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
     if isinstance(proc,Primitve_Implementation):
         return apply_cont(cc,proc.op(*args))
@@ -36,7 +36,7 @@ def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
         env = extend_env(param,arg,env)
     return value_of_k(proc.body, env, cc)
 
-def value_of_k(expr, env,cc):
+def value_of_k(expr, env, cc):
     if isinstance(expr, Const_Exp):
         return apply_cont(cc, expr.val)
     elif isinstance(expr, Var_Exp):
