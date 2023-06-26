@@ -51,7 +51,8 @@ def p_neg_exp(p):
             | '-' expr"""
     match tuple(p[1:]): 
         case (op,'(',left ,',' ,right,')'):
-            p[0] = Primitive_Exp(op,(left,right))
+            p[0] = Diff_Exp(left,right)
+            # p[0] = Primitive_Exp(op,(left,right))
         case (op, expr):
             p[0] = Diff_Exp(Const_Exp(0), expr)
 

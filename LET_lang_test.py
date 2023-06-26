@@ -16,6 +16,8 @@ def test_diff_exp():
     env = extend_env('i', 1, env)
     env = extend_env('v', 5, env)
     env = extend_env('x', 10, env)
+    prog = '-(x,3)'
+    assert(value_of_prog(prog,env) == 7)
     prog = '-(-(x,3),-(v,i))'
     assert(value_of_prog(prog,env) == 3.0)
 
@@ -502,4 +504,7 @@ if __name__ == '__main__':
     test_laziness()
     from LET_cc import * 
     print('LET_cc')
+    main()
+    from LET_cc_imperative import * 
+    print('LET_cc_imperative')
     main()
