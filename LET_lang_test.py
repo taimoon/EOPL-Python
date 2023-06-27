@@ -348,7 +348,7 @@ def test_letrec_multi():
                     sum_odd(x,acm) =
                         cond 
                         zero?(x) => acm
-                        (odd x) => (sum_odd (dec x) (add x acm))
+                        equal?((odd x),1) => (sum_odd (dec x) (add x acm))
                         else (sum_odd (dec x) acm)
                         end
                     in (sum_odd 6 0)'''
