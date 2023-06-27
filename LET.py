@@ -27,7 +27,7 @@ def value_of(expr, env):
         return value_of(expr.exp,env) == 0
     elif isinstance(expr, Branch):
         # if value_of(expr.pred,env):
-        if value_of(expr.pred,env) != 0:
+        if value_of(expr.pred,env) is True:
             return value_of(expr.conseq,env)
         else:
             return value_of(expr.alter,env)
