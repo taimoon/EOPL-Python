@@ -87,6 +87,27 @@ def extend_env_rec_ref(vars,paramss,bodys,env:Environment):
 def apply_env(env:Environment,var):
     return env.apply(var)
 
+def init_tenv():
+    corspd = {'-'  : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+              '+'  : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+              '*'  : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+              '/'  : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+              'greater?': Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
+              'less?'   : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
+              'equal?'  : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
+              'cons'    : Pair,
+              'zero?'   : Proc_Type((Int_Type(),),Bool_Type()),
+              'minus'   : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+            #   'car'     : car,
+            #   'cdr'     : cdr,
+            #   'list'    : list_to_pair,
+            #   'print'   : print,
+            }
+    env = empty_env()
+    for var,val in corspd.items():
+        env = extend_env(var,val,env)
+    return env
+
 def get_all_primitive_implementation():
     def list_to_pair(*args):
         if args == ():
@@ -101,27 +122,20 @@ def get_all_primitive_implementation():
     
     # iszero = lambda x : x == 0
     from operator import sub,add,mul,truediv,gt,lt,eq
-    corspd = {'-': sub,
-            '+': add,
-            '*': mul,
-            '/': truediv,
-            'greater?':gt,
-            'less?':lt,
-            'equal?': eq,
-            # 'cons': lambda x,y: Pair(x,y),
-            # 'zero?': lambda x : x == 0,
-            # 'minus' : lambda exp : - exp,
-            # 'car' : lambda t: t.car,
-            # 'cdr' : lambda t: t.cdr,
-            # 'list':list_to_pair,
-            # 'print':lambda v: print(v),
-            'cons': Pair,
-            'zero?': iszero,
-            'minus' : minus,
-            'car' : car,
-            'cdr' : cdr,
-            'list':list_to_pair,
-            'print':print,
+    corspd = {'-'  : sub,
+              '+'  : add,
+              '*'  : mul,
+              '/'  : truediv,
+              'greater?': gt,
+              'less?'   : lt,
+              'equal?'  : eq,
+              'cons'    : Pair,
+              'zero?'   : iszero,
+              'minus'   : minus,
+              'car'     : car,
+              'cdr'     : cdr,
+              'list'    : list_to_pair,
+              'print'   : print,
             }
     return corspd
 

@@ -18,22 +18,40 @@ def p_expr_list(p):
 
 def p_proc(p):
     "expr : PROC '(' params_opt ')' expr"
-    p[0] = Proc_Exp(p[3],p[5])
+    params = p[3]
+    if len(params[0]) > 1 and\
+        isinstance(params[0][1], Int_Type|Bool_Type|Proc_Type):
+        types = tuple(map(lambda p: p[1], params))
+        params = tuple(map(lambda p: p[0], params))
+        p[0] = Proc_Exp(params,p[5],types)
+    else:
+        p[0] = Proc_Exp(p[3],p[5])
 
 def p_params_opt(p):
     '''params_opt : 
+            | typed_params
             | params'''
     p[0] = tuple()
     if len(p) > 1:
         p[0] = p[1]
-    
+
+def p_typed_params(p):
+    '''typed_params : ID ':' type
+        | ID ':' type ',' typed_params '''
+    p[0] = ((p[1],p[3]),)
+    if len(p[1:]) > 3:
+        p[0] += p[5]
+
+  
 def p_params(p):
     '''params : ID
               | ID ',' params'''
     p[0] = (p[1],)
     if len(p) > 2:
         p[0] += p[3]
-    
+
+
+ 
 def p_number(p):
     "expr : NUMBER"
     p[0] = Const_Exp(p[1])
@@ -171,11 +189,20 @@ def p_let_pair(p):
 def p_letrec_exp(p):
     "expr : LETREC letrec_pairs IN expr"
     let_pairs = p[2]
-    vars = tuple(map(lambda t: t[0], let_pairs))
-    paramss = tuple(map(lambda t: t[1], let_pairs))
-    exprs = tuple(map(lambda t: t[2], let_pairs))
+    if len(let_pairs[0]) > 3:
+        res_types = tuple(map(lambda t: t[0], let_pairs))
+        vars = tuple(map(lambda t: t[1], let_pairs))
+        paramss = tuple(map(lambda t: tuple(p[0] for p in t[2]), let_pairs))
+        arg_types = tuple(map(lambda t: tuple(p[1] for p in t[2]), let_pairs))
+        exprs = tuple(map(lambda t: t[3], let_pairs))
+        p[0] = Rec_Proc(vars,paramss,exprs,p[4],
+                        res_types=res_types,arg_types=arg_types)
+    else:
+        vars = tuple(map(lambda t: t[0], let_pairs))
+        paramss = tuple(map(lambda t: t[1], let_pairs))
+        exprs = tuple(map(lambda t: t[2], let_pairs))
 
-    p[0] = Rec_Proc(vars,paramss,exprs, p[4])
+        p[0] = Rec_Proc(vars,paramss,exprs, p[4])
 
 def p_letrec_pairs(p):
     """
@@ -186,8 +213,15 @@ def p_letrec_pairs(p):
         p[0] += p[2]
 
 def p_letrec_pair(p):
-    "letrec_pair : ID '(' params_opt ')' '=' expr"
-    p[0] = (p[1],p[3],p[6])
+    """\
+    letrec_pair : ID '(' params_opt ')' '=' expr
+        | type   ID '(' params_opt ')' '=' expr  """
+    match tuple(p[1:]):
+        case (ID, '(',params,')','=',expr):
+            p[0] = (ID,params,expr)
+        case (type, ID, '(',params,')','=',expr):
+            p[0] = (type,ID,params,expr)
+    # p[0] = (p[1],p[3],p[6])
 
 def p_cond_exp(p):
     "expr : COND cond_clauses END"
@@ -222,7 +256,6 @@ def p_memory_exp(p):
     """
     p[1] = reserved[p[1]]
     match tuple(p)[1:]:
-        
         case ('SETREF','(', loc, ',', expr,')'):
             p[0] = SetRef(loc,expr)
         case ('DEREF', '(',expr,')'):
@@ -236,6 +269,24 @@ def p_set_exp(p):
     """expr : SET ID '=' expr"""
     _set,var,_assign,expr = p[1:]
     p[0] = Assign_Exp(var,expr)
+
+def p_type(p):
+    """type : INT
+        | BOOL
+        | '(' type TYPEARROW type ')'
+    """
+    p[1] = reserved[p[1]] if p[1] != '(' else p[1]
+    match tuple(p)[1:]:
+        case ('(',arg_type,TYPEARROW,result_type,')'):
+            p[0] = Proc_Type((arg_type,),result_type)
+        case ('INT',):
+            p[0]=Int_Type()
+        case ('BOOL',):
+            p[0]=Bool_Type()
+        case _:
+            raise Exception(str(tuple(p[1:])))
+            
+            
 
 # Error rule for syntax errors
 def p_error(p):

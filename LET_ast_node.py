@@ -71,6 +71,7 @@ class Const_Exp:
 class Proc_Exp:
     params:typing.Any
     body:typing.Any
+    types:typing.Any = None
 
 @dataclass
 class Proc_Val:
@@ -78,6 +79,7 @@ class Proc_Val:
     params:typing.Any
     body:typing.Any
     env:typing.Any
+    types:typing.Any = None
 
 @dataclass
 class Rec_Proc:
@@ -85,6 +87,8 @@ class Rec_Proc:
     params:typing.Any
     body:typing.Any
     expr:typing.Any
+    res_types:typing.Any = None
+    arg_types:typing.Any = None
 
 @dataclass
 class App_Exp:
@@ -240,3 +244,16 @@ class Thunk:
     'lazy interpreter data structure'
     expr:typing.Any
     env:typing.Any
+
+@dataclass
+class Int_Type:
+    pass
+
+@dataclass
+class Bool_Type:
+    pass
+
+@dataclass
+class Proc_Type:
+    arg_type:typing.Any
+    result_type:typing.Any

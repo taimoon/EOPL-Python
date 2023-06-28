@@ -42,14 +42,18 @@ reserved = {
    'set'    : 'SET',
    'setcar': 'SETCAR',
    'setcdr': 'SETCDR',
+   
+   'int': 'INT',
+   'bool' : 'BOOL',
 }
-tokens = "NUMBER ID RIGHTARROW".split() + list(reserved.values())
+tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
 
 # literals
-literals = r'-+*/,=();{}'
+literals = r'-+*/,=();{}:?'
 
 # Specification of tokens
 t_RIGHTARROW = r'\=>'
+t_TYPEARROW = r'\->'
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9\?\*]*'

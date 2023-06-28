@@ -460,6 +460,28 @@ def test_laziness():
     '''
     assert(value_of_prog(prog) == 1)
 
+def test_checked():
+    from CHECKED import type_of_prog
+    from LET import value_of_prog
+    prog = 'proc (x : int) -(x,1)'
+    res = Proc_Type((Int_Type(),), Int_Type())
+    assert(type_of_prog(prog) == res)
+    
+    prog = '''\
+    letrec
+        int double (x : int) = if zero?(x)
+            then 0
+            else -((double -(x,1)), -2)
+    in double
+    '''
+    res = Proc_Type((Int_Type(),), Int_Type())
+    assert(type_of_prog(prog) == res)
+    prog = '''\
+    proc (f : (bool -> int)) proc (n : int) (f zero?(n))'''
+    res = Proc_Type((Proc_Type((Bool_Type(),), Int_Type()),),
+                    Proc_Type((Int_Type(),), Int_Type()))
+    assert(type_of_prog(prog) == res)
+
 def main(recur=True):
     test_env()
     test_diff_exp()
@@ -508,3 +530,4 @@ if __name__ == '__main__':
     from LET_cc_imperative import * 
     print('LET_cc_imperative')
     main()
+    test_checked()
