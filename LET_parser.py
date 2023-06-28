@@ -268,12 +268,15 @@ def p_memory_exp(p):
             p[0] = Ref(expr)
 
 def p_type(p):
-    """type : INT
+    """type : '?'
+        | INT
         | BOOL
         | '(' type TYPEARROW type ')'
     """
-    p[1] = reserved[p[1]] if p[1] != '(' else p[1]
+    p[1] = reserved[p[1]] if p[1] in reserved.keys() else p[1]
     match tuple(p)[1:]:
+        case ('?'):
+            p[0] = No_Type()
         case ('(',arg_type,TYPEARROW,result_type,')'):
             p[0] = Proc_Type((arg_type,),result_type)
         case ('INT',):
@@ -282,8 +285,7 @@ def p_type(p):
             p[0]=Bool_Type()
         case _:
             raise Exception(str(tuple(p[1:])))
-            
-            
+           
 
 # Error rule for syntax errors
 def p_error(p):
