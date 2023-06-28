@@ -70,7 +70,6 @@ def p_neg_exp(p):
     match tuple(p[1:]): 
         case (op,'(',left ,',' ,right,')'):
             p[0] = Diff_Exp(left,right)
-            # p[0] = Primitive_Exp(op,(left,right))
         case (op, expr):
             p[0] = Diff_Exp(Const_Exp(0), expr)
 
@@ -151,7 +150,7 @@ def p_sequence(p):
 def p_expr_seq(p):
     """expr_seq : expr END
                 | expr ';' expr_seq
-            """
+    """
     match tuple(p)[1:]:
         case (expr,';',exprs):
             p[0] = (expr,) + exprs
@@ -213,15 +212,15 @@ def p_letrec_pairs(p):
         p[0] += p[2]
 
 def p_letrec_pair(p):
-    """\
+    """
     letrec_pair : ID '(' params_opt ')' '=' expr
-        | type   ID '(' params_opt ')' '=' expr  """
+        | type   ID '(' params_opt ')' '=' expr
+    """
     match tuple(p[1:]):
         case (ID, '(',params,')','=',expr):
             p[0] = (ID,params,expr)
         case (type, ID, '(',params,')','=',expr):
             p[0] = (type,ID,params,expr)
-    # p[0] = (p[1],p[3],p[6])
 
 def p_cond_exp(p):
     "expr : COND cond_clauses END"
@@ -248,14 +247,17 @@ def p_clause_exp(p):
     p[0] = Clause(p[1],p[3])
 
 def p_memory_exp(p):
-    """\
+    """
     expr : REF '(' expr ')'
         | NEWREF '(' expr ')'
         | DEREF '(' expr ')'
         | SETREF '(' expr ',' expr ')'
+        | SET ID '=' expr
     """
     p[1] = reserved[p[1]]
     match tuple(p)[1:]:
+        case ('SET', var, '=', expr):
+            p[0] = Assign_Exp(var,expr)
         case ('SETREF','(', loc, ',', expr,')'):
             p[0] = SetRef(loc,expr)
         case ('DEREF', '(',expr,')'):
@@ -264,11 +266,6 @@ def p_memory_exp(p):
             p[0] = NewRef(expr)
         case ('REF', '(',expr,')'):
             p[0] = Ref(expr)
-
-def p_set_exp(p):
-    """expr : SET ID '=' expr"""
-    _set,var,_assign,expr = p[1:]
-    p[0] = Assign_Exp(var,expr)
 
 def p_type(p):
     """type : INT
