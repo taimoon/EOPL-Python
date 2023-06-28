@@ -247,13 +247,25 @@ class Thunk:
 
 @dataclass
 class Int_Type:
-    pass
+    def __str__(self) -> str:
+        return 'int'
 
 @dataclass
 class Bool_Type:
-    pass
+    def __str__(self) -> str:
+        return 'bool'
 
 @dataclass
 class Proc_Type:
     arg_type:typing.Any
     result_type:typing.Any
+    def __str__(self) -> str:
+        res_t_str = self.result_type.__str__()
+        arg_t_str = ' * '.join(str(t) for t in self.arg_type)
+        out = f'({arg_t_str} -> {res_t_str})'
+        return out
+
+@dataclass
+class No_Type:
+    def __str__(self) -> str:
+        return 'void'

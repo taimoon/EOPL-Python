@@ -43,6 +43,7 @@ reserved = {
    'setcar': 'SETCAR',
    'setcdr': 'SETCDR',
    
+   'void' : 'VOID',
    'int': 'INT',
    'bool' : 'BOOL',
 }

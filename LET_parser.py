@@ -19,7 +19,9 @@ def p_expr_list(p):
 def p_proc(p):
     "expr : PROC '(' params_opt ')' expr"
     params = p[3]
-    if len(params[0]) > 1 and\
+    if len(params) == 0:
+        p[0] = Proc_Exp(params,p[5],(No_Type(),))
+    elif len(params[0]) > 1 and\
         isinstance(params[0][1], Int_Type|Bool_Type|Proc_Type):
         types = tuple(map(lambda p: p[1], params))
         params = tuple(map(lambda p: p[0], params))
@@ -269,16 +271,19 @@ def p_memory_exp(p):
 
 def p_type(p):
     """type : '?'
+        | VOID
         | INT
         | BOOL
-        | '(' type TYPEARROW type ')'
+        | '(' multi_arg_type TYPEARROW type ')'
     """
     p[1] = reserved[p[1]] if p[1] in reserved.keys() else p[1]
     match tuple(p)[1:]:
-        case ('?'):
+        case ('?',):
+            p[0] = No_Type()
+        case ('VOID',): #TODO
             p[0] = No_Type()
         case ('(',arg_type,TYPEARROW,result_type,')'):
-            p[0] = Proc_Type((arg_type,),result_type)
+            p[0] = Proc_Type(arg_type,result_type)
         case ('INT',):
             p[0]=Int_Type()
         case ('BOOL',):
@@ -286,6 +291,14 @@ def p_type(p):
         case _:
             raise Exception(str(tuple(p[1:])))
            
+def p_multi_arg_type(p):
+    '''
+    multi_arg_type : type
+        | type '*' type
+    '''
+    p[0] = (p[1],)
+    if len(p) > 2:
+        p[0] += p[2]
 
 # Error rule for syntax errors
 def p_error(p):

@@ -464,8 +464,10 @@ def test_checked():
     from CHECKED import type_of_prog
     from LET import value_of_prog
     prog = 'proc (x : int) -(x,1)'
-    res = Proc_Type((Int_Type(),), Int_Type())
-    assert(type_of_prog(prog) == res)
+    res = type_of_prog(prog)
+    ans = Proc_Type((Int_Type(),), Int_Type())
+    assert(str(res) == '(int -> int)')
+    assert(res == ans)
     
     prog = '''\
     letrec
@@ -474,13 +476,40 @@ def test_checked():
             else -((double -(x,1)), -2)
     in double
     '''
-    res = Proc_Type((Int_Type(),), Int_Type())
-    assert(type_of_prog(prog) == res)
+    res = type_of_prog(prog)
+    ans = Proc_Type((Int_Type(),), Int_Type())
+    assert(str(res) == '(int -> int)')
+    assert(res == ans)
+    
     prog = '''\
     proc (f : (bool -> int)) proc (n : int) (f zero?(n))'''
-    res = Proc_Type((Proc_Type((Bool_Type(),), Int_Type()),),
+    res = type_of_prog(prog)
+    ans = Proc_Type((Proc_Type((Bool_Type(),), Int_Type()),),
                     Proc_Type((Int_Type(),), Int_Type()))
-    assert(type_of_prog(prog) == res)
+    assert(str(res) == '((bool -> int) -> (int -> int))')
+    assert(res == ans)
+    
+    prog = '''\
+    letrec
+        int fib_iter (a:int,b:int,n:int) =
+            if zero?(n)
+            then b
+            else (fib_iter b +(a,b) -(n,1))
+    in fib_iter
+    '''
+    res = type_of_prog(prog)
+    ans = Proc_Type((Int_Type(),Int_Type(),Int_Type()),Int_Type())
+    assert(str(res) == '(int * int * int -> int)')
+    assert(res == ans)
+    
+    prog = '''\
+    proc () 1
+    '''
+    res = type_of_prog(prog)
+    ans = Proc_Type((No_Type(),),Int_Type())
+    assert(str(res) == '(void -> int)')
+    assert(res == ans)
+    
 
 def main(recur=True):
     test_env()
