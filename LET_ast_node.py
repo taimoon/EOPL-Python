@@ -266,6 +266,11 @@ class Proc_Type:
         return out
 
 @dataclass
-class No_Type:
+class Void_Type:
     def __str__(self) -> str:
         return 'void'
+
+@dataclass
+class No_Type:
+    def __str__(self) -> str:
+        return '?'

@@ -9,9 +9,7 @@ class Environment:
         params:None
         body:None
         delayed_env:None
-        # @property
-        # def val(self):
-        #     return Proc_Val(self.params,self.body,self.delayed_env())
+    
     @dataclass
     class Referenced_Rec_Proc:
         params:None
@@ -34,7 +32,6 @@ class Environment:
                 continue
             if isinstance(val,self.Delayed_Rec_Proc):
                 return Proc_Val(val.params,val.body,val.delayed_env())
-                # return val.val
             elif isinstance(val,self.Referenced_Rec_Proc):
                 from memory import newref
                 # also work but not test cases to show it doesn't work
@@ -152,9 +149,9 @@ def extend_senv(var,env:Environment):
     return env.extend(var,None)
 
 def apply_senv(env:Environment,src_var):
-    for lexaddr,(var,_) in enumerate(env.env):
+    for lex_addr,(var,_) in enumerate(env.env):
         if var == src_var:
-            return lexaddr
+            return lex_addr
     raise Exception("Unbound variable",src_var,f"env - {env.env}")
 
 def nameless_env(obj):

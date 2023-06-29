@@ -506,7 +506,7 @@ def test_checked():
     proc () 1
     '''
     res = type_of_prog(prog)
-    ans = Proc_Type((No_Type(),),Int_Type())
+    ans = Proc_Type((Void_Type(),),Int_Type())
     assert(str(res) == '(void -> int)')
     assert(res == ans)
     
