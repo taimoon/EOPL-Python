@@ -502,6 +502,8 @@ def test_checked():
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
     
+    get_answer = lambda prog: type_of_prog(type_of_prog(prog))
+    
     prog = '''\
     proc (f:?) (f 11)
     '''
@@ -514,7 +516,7 @@ def test_inference():
     res = lambda_alpha_subst(prog,ans).type == prog
     assert(res is False)
     
-    get_answer = lambda prog: type_of_prog(type_of_prog(prog))
+    
     prog = '''\
     proc (x:?) zero?(x)
     '''
@@ -529,7 +531,7 @@ def test_inference():
     ans = Proc_Type((proc_t,),proc_t)
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
-    
+
     
     
     
