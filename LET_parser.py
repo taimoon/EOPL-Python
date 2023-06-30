@@ -4,6 +4,14 @@ import ply.yacc as yacc
 from LET_lexer import tokens, reserved
 from LET_ast_node import *
 
+def p_prog(p):
+    "prog : module_opt expr"
+    if p[1] is None:
+        p[0] = p[2]
+    else:
+        p[0] = Program(p[1],p[2])
+    
+# Expression
 def p_application(p):
     "expr : '(' expr_list ')'"
     expr_list = p[2]
@@ -250,6 +258,7 @@ def p_clause_exp(p):
     "cond_clause : expr RIGHTARROW expr"
     p[0] = Clause(p[1],p[3])
 
+# Memory
 def p_memory_exp(p):
     """
     expr : REF '(' expr ')'
@@ -271,6 +280,7 @@ def p_memory_exp(p):
         case ('REF', '(',expr,')'):
             p[0] = Ref(expr)
 
+# Type
 def p_type(p):
     """type : '?'
         | VOID
@@ -301,6 +311,65 @@ def p_multi_arg_type(p):
     p[0] = (p[1],)
     if len(p) > 2:
         p[0] += p[2]
+
+# Modules
+def p_module_opt(p):
+    '''module_opt : 
+        | modules'''
+    p[0] = p[1] if len(p) > 1 else None
+
+def p_modules(p):
+    '''modules : module
+        | module modules'''
+    p[0] = (p[1],)
+    if len(p) > 2:
+        p[0] += p[2]
+
+def p_module_def(p):
+    '''
+    module : MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
+    '''
+    module_kw,name,interface_kw,_,declarations,_,body_kw,_,body,_ = p[1:]
+    p[0] = Module_Def(name,declarations,body)
+    
+def p_decl_opt(p):
+    '''decl_opt : 
+        | declarations'''
+    p[0] = p[1] if p[1] is not None else tuple()
+    p[0] = Interface(p[0])
+
+def p_declarations(p):
+    '''declarations : decl
+        | decl declarations'''
+    p[0] = (p[1],)
+    if len(p) > 2:
+        p[0] += p[2]
+
+def p_decl(p):
+    '''decl : ID ':' type'''
+    p[0] = Var_Decl(p[1],p[3])
+
+def p_module_body_opt(p):
+    '''module_body_opt :
+        | module_body'''
+    p[0] = p[1] if p[1] is not None else tuple()
+    p[0] = Module_Body(p[0])
+
+def p_module_body(p):
+    '''module_body : def
+        | def module_body'''
+    p[0] = (p[1],)
+    if len(p) > 2:
+        p[0] += p[2]
+    
+
+def p_module_body_def(p):
+    '''def : ID '=' expr'''
+    p[0] = Var_Def(p[1],p[3])
+    
+def p_qualified_expr(p):
+    '''expr : FROM ID TAKE ID'''
+    p[0] = Qualified_Var_Exp(p[2],p[4])
 
 # Error rule for syntax errors
 def p_error(p):

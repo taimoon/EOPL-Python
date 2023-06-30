@@ -274,3 +274,40 @@ class Void_Type:
 class No_Type:
     def __str__(self) -> str:
         return '?'
+
+
+# module
+@dataclass
+class Var_Def:
+    name:str
+    expr:typing.Any
+
+@dataclass
+class Module_Body:
+    definitions:tuple[Var_Def]
+
+@dataclass
+class Var_Decl:
+    name:str
+    type:None
+
+@dataclass
+class Interface:
+    declarations:tuple[Var_Decl]
+
+@dataclass
+class Module_Def:
+    name:str
+    interface:Interface
+    body:Module_Body
+    
+@dataclass
+class Qualified_Var_Exp:
+    module_name:str
+    var_name:str
+
+@dataclass
+class Program:
+    modules:tuple[Module_Def]
+    expr:typing.Any
+    

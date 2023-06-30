@@ -532,7 +532,26 @@ def test_inference():
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
 
-    
+def test_modules():
+    from LET_parser import parser
+    parse = parser.parse
+    prog = '''\
+    module m1
+        interface [
+            a : int
+            b : int
+            c : int]
+        body
+        [a = 33
+        x = -(a,1) % = 32
+        b = -(a,x) % = 1
+        c = -(x,b)] % = 31
+    let a = 10
+    in -(-(from m1 take a,
+           from m1 take b),
+           a)
+    '''
+    print(parse(prog))
     
     
 
@@ -586,3 +605,4 @@ if __name__ == '__main__':
     main()
     test_checked()
     test_inference()
+    test_modules()

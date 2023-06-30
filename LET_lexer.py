@@ -46,11 +46,17 @@ reserved = {
    'void' : 'VOID',
    'int': 'INT',
    'bool' : 'BOOL',
+   
+   'module' : 'MODULE',
+   'interface': 'INTERFACE',
+   'body': 'BODY',
+   'from': 'FROM',
+   'take' : 'TAKE',
 }
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
 
 # literals
-literals = r'-+*/,=();{}:?'
+literals = r'-+*/,=();{}:?[]'
 
 # Specification of tokens
 t_RIGHTARROW = r'\=>'
@@ -75,6 +81,11 @@ def t_newline(t):
 
 # A string containing ignored characters (spaces and tabs)
 t_ignore  = ' \t'
+
+# Define the rule for the percent symbol
+def t_PERCENT(t):
+    r'%.*'  # Match '%' followed by any characters
+    pass   # Discard the token
 
 # Error handling rule
 def t_error(t):
