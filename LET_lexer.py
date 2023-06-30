@@ -46,6 +46,10 @@ reserved = {
    'void' : 'VOID',
    'int': 'INT',
    'bool' : 'BOOL',
+   'pairof' : 'PAIROF',
+   'listof': 'LISTOF',
+   'newpair': 'NEWPAIR',
+   'unpair': 'UNPAIR',
    
    'module' : 'MODULE',
    'interface': 'INTERFACE',
@@ -53,6 +57,7 @@ reserved = {
    'from': 'FROM',
    'take' : 'TAKE',
 }
+
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
 
 # literals

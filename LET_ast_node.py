@@ -129,6 +129,18 @@ class Pair:
             x = '(' + x
         return x + ' ' + self.cdr.__str__(False)
 
+@dataclass
+class Pair_Exp:
+    left:None
+    right:None
+    homogeneous:bool = False
+
+@dataclass
+class Unpair_Exp:
+    left:None
+    right:None
+    pair_exp:None
+    expr:None
 
 from memory import newref,deref,setref
 @dataclass(init=False)
@@ -275,6 +287,15 @@ class No_Type:
     def __str__(self) -> str:
         return '?'
 
+@dataclass
+class Pair_Type:
+    t0:typing.Any
+    t1:typing.Any
+    def __str__(self) -> str:
+        return f'pairof {self.t0} * {self.t1}'
+@dataclass
+class List_Type:
+    t:typing.Any
 
 # module
 @dataclass

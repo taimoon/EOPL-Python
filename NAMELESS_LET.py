@@ -62,6 +62,8 @@ def translation_of(expr,static_env):
         raise NotImplemented
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
+    elif isinstance(expr,Pair_Exp):
+        return translation_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),static_env)
     elif isinstance(expr,Let_Exp):
         return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
     elif isinstance(expr,Let_Star_Exp):

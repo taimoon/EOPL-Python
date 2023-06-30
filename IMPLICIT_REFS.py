@@ -131,6 +131,8 @@ def value_of(expr, env):
         return value_of(expand(expr.clauses),env)
     elif isinstance(expr,List):
         return value_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),env)
+    elif isinstance(expr,Pair_Exp):
+        return value_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")

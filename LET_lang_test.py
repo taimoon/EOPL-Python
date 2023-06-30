@@ -62,15 +62,28 @@ def test_if():
 def test_cond():
     prog = lambda x :f'''\
         let abs = proc(x) 
-            cond zero?(x) => 0
-            less?(x,0) => -(0,x)
-            else x
+            cond 
+                zero?(x) => 0
+                less?(x,0) => -(0,x)
+                else x
             end
         in (abs {x})
         '''
     assert(value_of_prog(prog(-10)) == 10)
     assert(value_of_prog(prog(0)) == 0)
     assert(value_of_prog(prog(10)) == 10)
+    
+    prog = lambda x : f'''\
+    let le = proc(x)
+        cond 
+            zero?(x) => zero?(0)
+            less?(x,0) => zero?(0)
+        end
+    in (le {x})
+    '''
+    assert(value_of_prog(prog(-10)) is True)
+    assert(value_of_prog(prog(0)) is True)
+    assert(value_of_prog(prog(10)) is False)
 
 def test_let():
     prog = 'let x=5 in -(x,3)'
@@ -85,6 +98,10 @@ def test_let():
     assert(value_of_prog(prog) == 3)  
 
 def test_proc_1():
+    prog = '''let f = proc () 13
+    in (f)
+    '''
+    assert(value_of_prog(prog) == 13)
     prog = '''\
         let f = proc (x) -(x,11)
         in (f (f 77))'''
@@ -499,6 +516,38 @@ def test_checked():
     assert(str(res) == '(void -> int)')
     assert(res == ans)
     
+    prog = '''\
+    let f = proc(xs:pairof int * int)
+        unpair x y = xs
+        in newpair(+(x,y),zero?(-(x,y)))
+    in (f newpair(3,2))
+    '''
+    res = type_of_prog(prog)
+    ans = Pair_Type(Int_Type(),Bool_Type())
+    assert(res == ans)
+    assert(str(res) == 'pairof int * bool')
+    assert(value_of_prog(prog) == Pair(5,False))
+    assert(str(value_of_prog(prog)) == '(5 . False)')
+    
+    prog = '''newpair(1,newpair(2,newpair(3,emptylist)))'''
+    assert(str(value_of_prog(prog)) == '(1 2 3)')
+    
+    try:
+        prog = '''\
+        let f = proc(xs:pairof int * int) xs
+        in (f newpair(zero?(3),2))
+        '''
+        res = type_of_prog(prog)
+        assert(False)
+    except AssertionError:
+        raise Exception("Unhandled Exception for unmatch argument type")
+    except Exception:
+        assert(True)
+    
+    
+    
+    
+    
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
     
@@ -551,7 +600,7 @@ def test_modules():
            from m1 take b),
            a)
     '''
-    print(parse(prog))
+    parse(prog)
     
     
 

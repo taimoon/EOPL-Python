@@ -95,6 +95,8 @@ def value_of_k(expr, env, cc):
         return value_of_k(expand(expr.clauses),env,cc)
     elif isinstance(expr,List):
         return value_of_k(Primitive_Exp('list',tuple(expr.exps)),env,cc)
+    elif isinstance(expr,Pair_Exp):
+        return value_of_k(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env,cc)
     elif isinstance(expr,Let_Star_Exp):
         def recur(vars,exprs):
             if vars == ():

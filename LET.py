@@ -42,6 +42,14 @@ def value_of(expr, env):
         return apply_proc(proc,args,proc.env) # lexical scoping
     elif isinstance(expr, Rec_Proc):
         return value_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,env))
+    elif isinstance(expr,Pair_Exp):
+        return Pair(value_of(expr.left,env),
+                    value_of(expr.right,env))
+    elif isinstance(expr,Unpair_Exp):
+        pair:Pair = value_of(expr.pair_exp,env)
+        env = extend_env(expr.left,pair.car,env)
+        env = extend_env(expr.right,pair.cdr,env)
+        return value_of(expr.expr,env)
     # Derived Form
     elif isinstance(expr,Let_Exp):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
@@ -58,13 +66,15 @@ def value_of(expr, env):
         def expand(clauses:tuple[Clause],otherwise=expr.otherwise):
             if clauses[1:] == ():
                 if otherwise is None:
-                    false_val = Zero_Test_Exp(Const_Exp(1))
+                    otherwise = Zero_Test_Exp(Const_Exp(1))
                 return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return value_of(expand(expr.clauses),env)
     elif isinstance(expr, Primitive_Exp):
         return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
+    elif isinstance(expr,List):
+        return value_of(App_Exp(Var_Exp('list'),expr.exps),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")

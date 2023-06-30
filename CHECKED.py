@@ -9,13 +9,11 @@ def extend_env_from_pairs(vars,vals,env):
     return env
 
 def check_equal_type(t1,t2,exp):
-    t1 = type(t1)
-    t2 = type(t2)
     if t1 != t2:
-        raise Exception(f"Type didn't match {t1} {t2} {exp}")
+        raise Exception(f"Type didn't match [{t1}] [{t2}] [{exp}]")
 
 def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
-    init_store()
+    # init_store()
     return type_of(parse(prog), env)
 
 def type_of(expr, env):    
@@ -62,6 +60,17 @@ def type_of(expr, env):
             check_equal_type(body_t,res_t,body)
             
         return type_of(expr.expr,ext_env)
+    elif isinstance(expr,Pair_Exp):
+        t0 = type_of(expr.left,env)
+        t1 = type_of(expr.right,env)
+        return Pair_Type(t0,t1)
+    elif isinstance(expr,Unpair_Exp):
+        t = type_of(expr.pair_exp,env)
+        if not isinstance(t,Pair_Type):
+            raise Exception(f"the expression is not pair for UNPAIR {expr}")
+        env = extend_env(expr.left,t.t0,env)
+        env = extend_env(expr.right,t.t1,env)
+        return type_of(expr.expr,env)
     # Statement
     elif isinstance(expr,Sequence):
         t = None
@@ -108,6 +117,7 @@ def type_of(expr, env):
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return type_of(expand(expr.clauses),env)
     elif isinstance(expr, Primitive_Exp):
+        # raise NotImplemented
         return type_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:

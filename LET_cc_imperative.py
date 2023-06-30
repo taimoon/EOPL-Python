@@ -187,6 +187,9 @@ def value_of_k():
         registers['expr'] = Primitive_Exp('list',tuple(expr.exps))
         return value_of_k()
         # return value_of_k(Primitive_Exp('list',tuple(expr.exps)),env,cc)
+    elif isinstance(expr,Pair_Exp):
+        registers['expr'] = App_Exp(Var_Exp('cons'),(expr.left,expr.right))
+        return value_of_k()
     elif isinstance(expr,Let_Star_Exp):
         def recur(vars,exprs):
             if vars == ():
