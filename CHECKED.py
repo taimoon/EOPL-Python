@@ -1,6 +1,7 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
+from memory import *
 
 def extend_env_from_pairs(vars,vals,env):
     for var,val in zip(vars,vals):
@@ -14,6 +15,7 @@ def check_equal_type(t1,t2,exp):
         raise Exception(f"Type didn't match {t1} {t2} {exp}")
 
 def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
+    init_store()
     return type_of(parse(prog), env)
 
 def type_of(expr, env):    
@@ -35,14 +37,14 @@ def type_of(expr, env):
         check_equal_type(t1,t2,expr)
         return t1
     elif isinstance(expr, Proc_Exp):
-        ext_env = extend_env_from_pairs(expr.params, expr.types,env)
+        ext_env = extend_env_from_pairs(expr.params, expr.types, env)
         res_t = type_of(expr.body,ext_env)
         return Proc_Type(expr.types,
                          result_type=res_t)
     elif isinstance(expr, App_Exp):
         # proc = value_of(expr.operator,env)
         proc_t = type_of(expr.operator,env)
-        if  not isinstance(proc_t,Proc_Type):
+        if not isinstance(proc_t,Proc_Type):
             raise Exception(f"Operator is not a procedure type {proc_t} {expr.operator}")
         
         arg_types = tuple(map(lambda exp: type_of(exp,env),expr.operand))
@@ -60,11 +62,33 @@ def type_of(expr, env):
             check_equal_type(body_t,res_t,body)
             
         return type_of(expr.expr,ext_env)
+    # Statement
+    elif isinstance(expr,Sequence):
+        t = None
+        for exp in expr.exps:
+            t = type_of(exp,env)
+        return Void_Type() if t is None else t
+    elif isinstance(expr,NewRef):
+        # t = type_of(expr.expr,env)
+        return Void_Type()
+        # return newref(t)
+    elif isinstance(expr,DeRef):
+        t = type_of(expr.expr,env)
+        check_equal_type(t,Int_Type(),expr.expr)
+        return No_Type()
+        # return deref(value_of(expr.expr,env))
+    elif isinstance(expr,SetRef):
+        ref_t = type_of(expr.loc,env)
+        check_equal_type(ref_t,Int_Type(),expr.loc)
+        # val_t = type_of(expr.expr,env)
+        return Void_Type()
+        # return setref(ref,val)
     # Derived Form
     elif isinstance(expr,Let_Exp):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form
-        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
+        types = tuple(type_of(exp,env) for exp in expr.exps)
+        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env)
     elif isinstance(expr,Let_Star_Exp):
         def expand(vars,exprs):
             if vars == ():

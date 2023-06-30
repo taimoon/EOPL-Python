@@ -19,15 +19,16 @@ def p_expr_list(p):
 def p_proc(p):
     "expr : PROC '(' params_opt ')' expr"
     params = p[3]
+    expr = p[5]
     if len(params) == 0:
-        p[0] = Proc_Exp(params,p[5],(No_Type(),))
+        p[0] = Proc_Exp(params,expr,(Void_Type(),))
     elif len(params[0]) > 1 and\
-        isinstance(params[0][1], Int_Type|Bool_Type|Proc_Type):
+        isinstance(params[0][1], Int_Type|Bool_Type|Proc_Type|No_Type|Void_Type):
         types = tuple(map(lambda p: p[1], params))
         params = tuple(map(lambda p: p[0], params))
-        p[0] = Proc_Exp(params,p[5],types)
+        p[0] = Proc_Exp(params,expr,types)
     else:
-        p[0] = Proc_Exp(p[3],p[5])
+        p[0] = Proc_Exp(params,expr)
 
 def p_params_opt(p):
     '''params_opt : 
@@ -39,7 +40,7 @@ def p_params_opt(p):
 
 def p_typed_params(p):
     '''typed_params : ID ':' type
-        | ID ':' type ',' typed_params '''
+        | ID ':' type ',' typed_params'''
     p[0] = ((p[1],p[3]),)
     if len(p[1:]) > 3:
         p[0] += p[5]
@@ -164,11 +165,12 @@ def p_let_exp(p):
             | LETMUT let_pairs IN expr
             | LET_STAR let_pairs IN expr"""
     let_token,pairs,_,expr = p[1:]
+    let_token = reserved[let_token]
     vars = tuple(map(lambda t:t[0], pairs))
     vals = tuple(map(lambda t:t[1], pairs))
-    if reserved[let_token] == 'LET':
+    if let_token == 'LET':
         p[0] =  Let_Exp(vars,vals,expr)
-    elif reserved[let_token] == 'LET_STAR':
+    elif let_token == 'LET_STAR':
         p[0] =  Let_Star_Exp(vars,vals,expr)
     else:
         p[0] =  Letmutable_Exp(vars,vals,expr)
@@ -280,14 +282,14 @@ def p_type(p):
     match tuple(p)[1:]:
         case ('?',):
             p[0] = No_Type()
-        case ('VOID',): #TODO
-            p[0] = No_Type()
+        case ('VOID',):
+            p[0] = Void_Type()
         case ('(',arg_type,TYPEARROW,result_type,')'):
             p[0] = Proc_Type(arg_type,result_type)
         case ('INT',):
-            p[0]=Int_Type()
+            p[0]= Int_Type()
         case ('BOOL',):
-            p[0]=Bool_Type()
+            p[0]= Bool_Type()
         case _:
             raise Exception(str(tuple(p[1:])))
            

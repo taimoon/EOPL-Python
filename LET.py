@@ -39,7 +39,6 @@ def value_of(expr, env):
             args = value_of(expr.operand[0].list_expr,env)
         else:
             args = map(lambda o : value_of(o, env), expr.operand)
-        # return apply_proc(proc,args,env) # dynamic scoping
         return apply_proc(proc,args,proc.env) # lexical scoping
     elif isinstance(expr, Rec_Proc):
         return value_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,env))

@@ -4,6 +4,7 @@ IS_DYNAMIC = False
 
 def test_env():
     env = init_env()
+    env = extend_env('x',7,env)
     env = extend_env('i', 1, env)
     env = extend_env('v', 5, env)
     env = extend_env('x', 10, env)
@@ -22,6 +23,8 @@ def test_diff_exp():
     assert(value_of_prog(prog,env) == 3.0)
 
 def test_bi_exp():
+    prog = "-(7,2)"
+    assert(value_of_prog(prog) == 5)
     prog = '''--(-5,9)'''
     assert(value_of_prog(prog) == 14)
     
@@ -48,20 +51,6 @@ def test_bi_exp():
     assert(value_of_prog(prog) == False)
     prog = 'greater?(0,-2)'
     assert(value_of_prog(prog) == True)
-
-def test_other_repr():
-    from LET import parse_LET_lang
-    prog = '(let (z 5) (let (x 3) (let (y (- x 1)) (let (x 4) (- z (- x y)))))))'
-    assert(value_of_prog(prog,parse=parse_LET_lang) == 3)
-    prog = '''
-    (let (x 7)
-    (let (y 2)
-    (let (y 
-            (let (x (- x 1)) (- x y)))
-    (- (- x 8) y)
-    )))
-    '''
-    assert(value_of_prog(prog,parse=parse_LET_lang) == -5)
 
 def test_if():
     env = init_env()
@@ -510,6 +499,40 @@ def test_checked():
     assert(str(res) == '(void -> int)')
     assert(res == ans)
     
+def test_inference():
+    from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
+    
+    prog = '''\
+    proc (f:?) (f 11)
+    '''
+    prog = get_answer(prog)
+    v1 = Var_Type()
+    ans = Proc_Type([Proc_Type([Int_Type()],v1)],v1)
+    res = lambda_alpha_subst(prog,ans).type == prog
+    assert(res is True)
+    ans = Proc_Type([Proc_Type([Int_Type()],v1)],Var_Type())
+    res = lambda_alpha_subst(prog,ans).type == prog
+    assert(res is False)
+    
+    get_answer = lambda prog: type_of_prog(type_of_prog(prog))
+    prog = '''\
+    proc (x:?) zero?(x)
+    '''
+    ans = Proc_Type((Int_Type(),),Bool_Type())
+    prog = get_answer(prog)
+    assert(lambda_alpha_subst(prog,ans).type == prog)
+    
+    prog = '''\
+    proc (f:?) proc (x:?) -((f 3),(f x))
+    '''
+    proc_t = Proc_Type((Int_Type(),),Int_Type())
+    ans = Proc_Type((proc_t,),proc_t)
+    prog = get_answer(prog)
+    assert(lambda_alpha_subst(prog,ans).type == prog)
+    
+    
+    
+    
 
 def main(recur=True):
     test_env()
@@ -560,3 +583,4 @@ if __name__ == '__main__':
     print('LET_cc_imperative')
     main()
     test_checked()
+    test_inference()

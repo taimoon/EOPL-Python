@@ -58,7 +58,8 @@ def translation_of(expr,static_env):
             args = tuple(args)
         return App_Exp(proc,args)
     elif isinstance(expr, Rec_Proc):
-        return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
+        # return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
+        raise NotImplemented
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
     elif isinstance(expr,Let_Exp):
@@ -82,11 +83,9 @@ def translation_of(expr,static_env):
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return translation_of(expand(expr.clauses),static_env)
     elif isinstance(expr,Unpack_Exp):
-        # TODO : making this as derived form
         return translation_of(App_Exp(Proc_Exp(expr.vars,expr.expr),
                                       (Unpack_Exp(None,expr.list_expr,None),)),
                               static_env)
-        return translation_of(App_Exp(Proc_Exp(expr.vars,expr.expr),expr.list_expr),static_env)
     else:
         raise Exception("Uknown LET expression type", expr)
 
