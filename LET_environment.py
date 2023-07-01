@@ -92,7 +92,6 @@ def init_tenv():
               'greater?': Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
               'less?'   : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
               'equal?'  : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
-            #   'cons'    : Proc_Type((No_Type(),No_Type()),),
               'zero?'   : Proc_Type((Int_Type(),),Bool_Type()),
               'minus'   : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
             #   'car'     : car,

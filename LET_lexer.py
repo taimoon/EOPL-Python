@@ -1,4 +1,3 @@
-# import ply.lex as lex
 import ply.lex as lex
 # PLS READ THE LINK TO THE DOC BEFORE MODIFYING
 'https://www.dabeaz.com/ply/ply.html'
@@ -20,11 +19,13 @@ reserved = {
    'end'    : 'END',
    'emptylist': 'NULL',
    'unpack' : 'UNPACK',
+   'unpair': 'UNPAIR',
    
    'zero?' : 'ZERO_TEST',
    'minus' : 'MINUS',
    'cdr'   : 'CDR',
    'car'   : 'CAR',
+   'null?' : 'NULL_TEST',
    'print' : 'PRINT',
    
    
@@ -32,6 +33,7 @@ reserved = {
    'greater?' : 'GREATER_TEST',
    'equal?'   : 'EQUAL_TEST',
    'cons'     : 'CONS',
+   'newpair': 'NEWPAIR',
    
    'list'   : 'LIST',
    
@@ -48,8 +50,6 @@ reserved = {
    'bool' : 'BOOL',
    'pairof' : 'PAIROF',
    'listof': 'LISTOF',
-   'newpair': 'NEWPAIR',
-   'unpair': 'UNPAIR',
    
    'module' : 'MODULE',
    'interface': 'INTERFACE',

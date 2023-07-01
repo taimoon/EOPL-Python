@@ -18,6 +18,14 @@ def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
 
 def type_of(expr, env):    
     if isinstance(expr, Const_Exp):
+        if isinstance(expr.val,NULL):
+            '''
+            workaround
+            the No_Type NULL only acceptable in newpair
+            but Typed NULL only acceptable in cons
+            '''
+            t = expr.val.t
+            return t if isinstance(t,No_Type) else List_Type(t)
         return Int_Type()
     elif isinstance(expr, Var_Exp):
         return apply_env(env, expr.var)  
@@ -63,7 +71,13 @@ def type_of(expr, env):
     elif isinstance(expr,Pair_Exp):
         t0 = type_of(expr.left,env)
         t1 = type_of(expr.right,env)
-        return Pair_Type(t0,t1)
+        if expr.homogeneous is True:
+            t0 = t0.t if isinstance(t0,List_Type) else t0
+            t1 = t1.t if isinstance(t1,List_Type) else t1
+            check_equal_type(t0,t1,expr)
+            return List_Type(t0)
+        else:
+            return Pair_Type(t0,t1)
     elif isinstance(expr,Unpair_Exp):
         t = type_of(expr.pair_exp,env)
         if not isinstance(t,Pair_Type):
@@ -71,6 +85,14 @@ def type_of(expr, env):
         env = extend_env(expr.left,t.t0,env)
         env = extend_env(expr.right,t.t1,env)
         return type_of(expr.expr,env)
+    elif isinstance(expr,List):
+        types = tuple(map(lambda exp: type_of(exp,env), expr.exps))
+        t0 = types[0]
+        for t in types[1:]:
+            check_equal_type(t0,t,expr)
+        return List_Type(t0)
+    elif isinstance(expr,Null_Exp):
+        return Bool_Type()
     # Statement
     elif isinstance(expr,Sequence):
         t = None
@@ -117,6 +139,15 @@ def type_of(expr, env):
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return type_of(expand(expr.clauses),env)
     elif isinstance(expr, Primitive_Exp):
+        if expr.op == 'car':
+            t = type_of(expr.exps[0],env)
+            t = t.t if isinstance(t,List_Type) else t
+            t = t.t0 if isinstance(t,Pair_Type) else t
+            return t
+        elif expr.op == 'cdr':
+            t = type_of(expr.exps[0],env)
+            t = t.t1 if isinstance(t,Pair_Type) else t
+            return t
         # raise NotImplemented
         return type_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr,Unpack_Exp):
@@ -126,4 +157,4 @@ def type_of(expr, env):
                                 operand  = (Unpack_Exp(None,expr.list_expr,None),)
                                 ),env)
     else:
-        raise Exception("Uknown LET expression type", expr)
+        raise Exception("Uknown CHECKED expression type", expr)

@@ -5,11 +5,16 @@ from LET_lexer import tokens, reserved
 from LET_ast_node import *
 
 def p_prog(p):
-    "prog : module_opt expr"
-    if p[1] is None:
-        p[0] = p[2]
-    else:
-        p[0] = Program(p[1],p[2])
+    '''
+    prog : module_opt expr
+        | expr
+        | type
+    '''
+    match tuple(p[1:]):
+        case (module,expr):
+            p[0] = Program(module,expr)
+        case (x,):
+            p[0] = x
     
 # Expression
 def p_application(p):
@@ -74,8 +79,15 @@ def p_var(p):
     p[0] =  Var_Exp(p[1])
 
 def p_null(p):
-    "expr : NULL"
-    p[0] = Const_Exp(NULL())
+    '''
+        expr : NULL
+            | NULL '(' type ')'
+    '''
+    match tuple(p[1:]):
+        case (x,'(',t,')'):
+            p[0] = Const_Exp(NULL(t))
+        case (x,):
+            p[0] = Const_Exp(NULL(No_Type()))
 
 def p_neg_exp(p):
     # neg_exp allows different interpretation of '-' for the purpose of testing
@@ -103,6 +115,7 @@ def p_primitive_exp(p):
     '''
     expr : CONS '(' expr ',' expr ')'
         | LIST '(' list_opt ')'
+        | NULL_TEST '(' expr ')'
         | unary_op '(' expr ')'
         | bi_op '(' expr ',' expr ')'
     '''
@@ -111,6 +124,8 @@ def p_primitive_exp(p):
             p[0] = Pair_Exp(left,right,True)
         case ('list','(',params,')'):
             p[0] = List(params)
+        case ('null?','(',expr,')'):
+            p[0] = Null_Exp(expr)
         case (op,'(',left ,',' ,right,')'):
             assert(isinstance(op,Bi_Op))
             p[0] = Primitive_Exp(op.op,(left,right))
@@ -134,7 +149,6 @@ def p_bi_op(p):
              | GREATER_TEST
              | LESS_TEST
              | EQUAL_TEST
-             | CONS
              | SETCAR
              | SETCDR"""
     p[0] = Bi_Op(p[1])
@@ -342,13 +356,15 @@ def p_type(p):
 def p_multi_arg_type(p):
     '''
     multi_arg_type : type
-        | type '*' type
+        | type '*' multi_arg_type
     '''
     match tuple(p[1:]):
-        case(type,types):
+        case(type,'*',types):
             p[0] = (type,) + types
         case (type,):
             p[0] = (type,)
+        case _:
+            raise Exception(tuple(p[1:]))
             
 
 # Modules

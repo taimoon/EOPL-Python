@@ -469,11 +469,13 @@ def test_laziness():
 def test_checked():
     from CHECKED import type_of_prog
     from LET import value_of_prog
+    from LET_parser import parser
+    parse = parser.parse
     prog = 'proc (x : int) -(x,1)'
     res = type_of_prog(prog)
-    ans = Proc_Type((Int_Type(),), Int_Type())
-    assert(str(res) == '(int -> int)')
-    assert(res == ans)
+    ans = '(int -> int)'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
     
     prog = '''\
     letrec
@@ -483,69 +485,107 @@ def test_checked():
     in double
     '''
     res = type_of_prog(prog)
-    ans = Proc_Type((Int_Type(),), Int_Type())
-    assert(str(res) == '(int -> int)')
-    assert(res == ans)
+    ans = '(int -> int)'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
     
-    prog = '''\
-    proc (f : (bool -> int)) proc (n : int) (f zero?(n))'''
+    prog = 'proc (f : (bool -> int)) proc (n : int) (f zero?(n))'
     res = type_of_prog(prog)
-    ans = Proc_Type((Proc_Type((Bool_Type(),), Int_Type()),),
-                    Proc_Type((Int_Type(),), Int_Type()))
-    assert(str(res) == '((bool -> int) -> (int -> int))')
-    assert(res == ans)
+    ans = '((bool -> int) -> (int -> int))'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
     
     prog = '''\
-    letrec
-        int fib_iter (a:int,b:int,n:int) =
-            if zero?(n)
-            then b
-            else (fib_iter b +(a,b) -(n,1))
-    in fib_iter
+    letrec int accumulator 
+            (op:(int * int -> int),stepper:(int -> int),f:(int->int),a:int,b:int,acm:int) =
+        if less?(a,b)
+        then (accumulator op stepper f (stepper a) b (op acm (f a)))
+        else acm
+    in accumulator
     '''
     res = type_of_prog(prog)
-    ans = Proc_Type((Int_Type(),Int_Type(),Int_Type()),Int_Type())
-    assert(str(res) == '(int * int * int -> int)')
-    assert(res == ans)
+    ans = '((int * int -> int) * (int -> int) * (int -> int) * int * int * int -> int)' 
+    assert(str(res) == ans)
+    assert(res == parse(ans))
     
     prog = '''\
-    proc () 1
+    letrec int accumulator 
+            (op:(int * int -> int),stepper:(int -> int),f:(int->int),a:int,b:int,acm:int) =
+        if less?(a,b)
+        then (accumulator op stepper f (stepper a) b (op acm (f a)))
+        else acm
+    in let*
+        op = proc(x:int,y:int) +(x,y)
+        stepper = proc(x:int) +(x,2)
+        f = proc(x:int) *(x,x)
+        sum = proc (a:int,b:int) (accumulator op stepper f a b 0)
+    in (sum 0 10)
     '''
+    ans = sum(x*x for x in range(0,10,2))
+    assert(value_of_prog(prog) == ans)
+    
+    prog = 'proc () 1'
     res = type_of_prog(prog)
-    ans = Proc_Type((Void_Type(),),Int_Type())
-    assert(str(res) == '(void -> int)')
-    assert(res == ans)
+    ans = '(void -> int)'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    
+    prog = '''let xs = newpair(newpair(1,zero?(0)),newpair(3,emptylist))
+    in newpair(car(xs),cdr(cdr(xs)))'''
+    res = type_of_prog(prog)
+    ans = 'pairof pairof int * bool * ?'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    assert(value_of_prog(prog) == Pair(Pair(1,True),NULL()))
     
     prog = '''\
-    let f = proc(xs:pairof int * int)
+    let neg = proc (x:bool) if x then zero?(1) else zero?(0)
+    in letrec pairof int * bool f (xs:pairof int * bool) =
         unpair x y = xs
-        in newpair(+(x,y),zero?(-(x,y)))
-    in (f newpair(3,2))
+        in if zero?(x) then newpair(x,y) else (f newpair(-(x,1),(neg y)))
+    in (f newpair(3,zero?(0)))
     '''
     res = type_of_prog(prog)
-    ans = Pair_Type(Int_Type(),Bool_Type())
-    assert(res == ans)
-    assert(str(res) == 'pairof int * bool')
-    assert(value_of_prog(prog) == Pair(5,False))
-    assert(str(value_of_prog(prog)) == '(5 . False)')
+    ans = 'pairof int * bool'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    assert(value_of_prog(prog) == Pair(0,False))
+    assert(str(value_of_prog(prog)) == '(0 . False)')
     
-    prog = '''newpair(1,newpair(2,newpair(3,emptylist)))'''
-    assert(str(value_of_prog(prog)) == '(1 2 3)')
+    def f():
+        try:
+            prog = '''\
+            let f = proc(xs:pairof int * int) xs
+            in (f newpair(zero?(3),2))
+            '''
+            res = type_of_prog(prog)
+            assert(False)
+        except AssertionError:
+            raise Exception("Unhandled Exception for unmatch argument type")
+        except Exception:
+            assert(True)
+    f()
     
-    try:
-        prog = '''\
-        let f = proc(xs:pairof int * int) xs
-        in (f newpair(zero?(3),2))
-        '''
-        res = type_of_prog(prog)
-        assert(False)
-    except AssertionError:
-        raise Exception("Unhandled Exception for unmatch argument type")
-    except Exception:
-        assert(True)
+    prog = 'list(1,2,3)'
+    res = type_of_prog(prog)
+    ans = 'listof int'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    assert(value_of_prog(prog) == Pair(1,Pair(2,Pair(3,NULL(No_Type())))))
     
-    
-    
+    prog = '''
+    letrec listof int enumerate (x:int)
+        = if zero?(x) then emptylist(int) else cons(x,(enumerate -(x,1)))
+        listof int map (xs: listof int, f : (int -> int))
+        = if null?(xs) then emptylist(int) else cons((f car(xs)), (map cdr(xs) f))
+    in newpair(enumerate,(enumerate 3))
+    '''
+    ans = 'pairof (int -> listof int) * listof int'
+    res = type_of_prog(prog)
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    val = Pair(3,Pair(2,Pair(1,NULL(t=Int_Type()))))
+    assert(value_of_prog(prog).cdr == val)
     
     
 def test_inference():

@@ -196,10 +196,18 @@ class Mutable_Pair:
 @dataclass
 class List:
     exps:typing.Any
-    
+
+@dataclass
 class NULL:
+    t:typing.Any = None
     def __str__(self) -> None:
         return '()'
+    def __post_init__(self):
+        self.t = No_Type() if self.t is None else self.t
+
+@dataclass
+class Null_Exp:
+    expr:typing.Any
 
 @dataclass
 class Unpack_Exp:
@@ -296,6 +304,8 @@ class Pair_Type:
 @dataclass
 class List_Type:
     t:typing.Any
+    def __str__(self) -> str:
+        return f'listof {self.t}'
 
 # module
 @dataclass
