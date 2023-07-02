@@ -4,7 +4,11 @@ from LET_environment import *
 
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
-    return value_of(parse(prog), env)
+    prog = parse(prog)
+    if isinstance(prog,Program):
+        return value_of(prog.expr,add_modules_to_env(prog.modules,env))
+    else:
+        return value_of(prog, env)
 
 def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
     if isinstance(proc,Primitve_Implementation):
@@ -20,7 +24,7 @@ def value_of(expr, env):
     if isinstance(expr, Const_Exp):
         return expr.val
     elif isinstance(expr, Var_Exp):
-        return apply_env(env, expr.var)  
+        return apply_env(env, expr.var)
     elif isinstance(expr, Diff_Exp):
         return value_of(expr.left,env) - value_of(expr.right,env)
     elif isinstance(expr, Zero_Test_Exp):
@@ -50,6 +54,8 @@ def value_of(expr, env):
         env = extend_env(expr.left,pair.car,env)
         env = extend_env(expr.right,pair.cdr,env)
         return value_of(expr.expr,env)
+    elif isinstance(expr,Qualified_Var_Exp):
+        return lookup_qualified_var(expr.module_name,expr.var_name,env)
     # Derived Form
     elif isinstance(expr,Let_Exp):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
@@ -84,30 +90,23 @@ def value_of(expr, env):
     else:
         raise Exception("Uknown LET expression type", expr)
 
+def add_modules_to_env(modules:tuple[Module_Def],env):
+    'accumulate module bindings to env'
+    for module in modules:
+        local_env = add_modules_to_env(module.modules,env) # TODO : check correctness
+        bindings = definitions_to_env(module.body,local_env)
+        env = extend_env_with_module(module.name,bindings,env)
+    return env
 
-def parse_LET_lang(prog):
-    # s-list syntax parser
-    from list_parser import parse, Atom
-    def recur(expr):
-        match expr:
-            case x if isinstance(x, Atom):
-                return Const_Exp(x.val)
-            case x if isinstance(x,str):
-                if x == 'True' or x == 'False':
-                    return Const_Exp(eval(x))
-                else:
-                    return Var_Exp(x)
-            case x if isinstance(x,str):
-                return Var_Exp(x)
-            case ('-', exp1, exp2):
-                return Diff_Exp(recur(exp1), recur(exp2))
-            case ('zero?', exp):
-                return Zero_Test_Exp(recur(exp))
-            case ('if', pred, conseq, alter):
-                return Branch(recur(pred), recur(conseq), recur(alter))
-            case ('let', (var, exp), body):
-                return Let_Exp(var, recur(exp), recur(body))
-            case _:
-                raise Exception("Unknown LET expression", expr)
-    
-    return recur(parse(prog))
+def definitions_to_env(defs:tuple[Var_Def],env:Environment) -> Environment:
+    # must be recursive
+    'let* semantic'
+    def recur(defs:tuple[Var_Def],env:Environment) -> Environment:
+        if defs == tuple():
+            return empty_env()
+        else:
+            var = defs[0].name
+            val = value_of(defs[0].expr,env)
+            new_env = extend_env(var,val,env)
+            return extend_env(var,val,recur(defs[1:],new_env))
+    return recur(defs,env)

@@ -314,23 +314,16 @@ class Var_Def:
     expr:typing.Any
 
 @dataclass
-class Module_Body:
-    definitions:tuple[Var_Def]
-
-@dataclass
 class Var_Decl:
     name:str
     type:None
 
 @dataclass
-class Interface:
-    declarations:tuple[Var_Decl]
-
-@dataclass
 class Module_Def:
     name:str
-    interface:Interface
-    body:Module_Body
+    interface: tuple[Var_Decl]
+    modules:tuple
+    body: tuple[Var_Def]
     
 @dataclass
 class Qualified_Var_Exp:

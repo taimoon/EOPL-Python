@@ -61,7 +61,7 @@ reserved = {
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
 
 # literals
-literals = r'-+*/,=();{}:?[]'
+literals = r'-+*/,=();{}:?[].'
 
 # Specification of tokens
 t_RIGHTARROW = r'\=>'

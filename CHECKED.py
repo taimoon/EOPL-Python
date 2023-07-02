@@ -3,7 +3,10 @@ from LET_parser import parser
 from LET_environment import *
 from memory import *
 
+class Repeated_Module_Error(Exception): pass
+
 def extend_env_from_pairs(vars,vals,env):
+    "no recursive; order shouldn't be mattered"
     for var,val in zip(vars,vals):
         env = extend_env(var,val,env)
     return env
@@ -13,8 +16,11 @@ def check_equal_type(t1,t2,exp):
         raise Exception(f"Type didn't match [{t1}] [{t2}] [{exp}]")
 
 def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
-    # init_store()
-    return type_of(parse(prog), env)
+    prog = parse(prog)
+    if isinstance(prog,Program):
+        return type_of(prog.expr,add_modules_to_tenv(prog.modules,env))
+    else:
+        return type_of(prog, env)
 
 def type_of(expr, env):    
     if isinstance(expr, Const_Exp):
@@ -93,6 +99,8 @@ def type_of(expr, env):
         return List_Type(t0)
     elif isinstance(expr,Null_Exp):
         return Bool_Type()
+    elif isinstance(expr,Qualified_Var_Exp):
+        return lookup_qualified_var(expr.module_name,expr.var_name,env)
     # Statement
     elif isinstance(expr,Sequence):
         t = None
@@ -148,7 +156,6 @@ def type_of(expr, env):
             t = type_of(expr.exps[0],env)
             t = t.t1 if isinstance(t,Pair_Type) else t
             return t
-        # raise NotImplemented
         return type_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
@@ -157,4 +164,68 @@ def type_of(expr, env):
                                 operand  = (Unpack_Exp(None,expr.list_expr,None),)
                                 ),env)
     else:
-        raise Exception("Uknown CHECKED expression type", expr)
+        raise Exception("Unknown CHECKED expression type", expr)
+
+
+def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
+    
+    for module in modules:
+        local_tenv = add_modules_to_tenv(module.modules,tenv) # TODO : check correctness
+        interface = defs_to_decls(module.body,local_tenv)
+        if not subset_interface(interface,module.interface):
+            raise Exception(f"Does not satisfy interface {module.interface} {interface}")
+
+        try:
+            lookup_module_name(module.name,tenv)
+            raise Repeated_Module_Error
+        except Repeated_Module_Error:
+            print(f"Repeated module name of '{module.name}' in {tenv}")
+            raise Repeated_Module_Error
+        except Exception as e:
+            module_tenv = decls_to_tenv(interface)
+            
+        
+        tenv = extend_env_with_module(module.name,module_tenv,tenv)
+    
+    return tenv
+
+def decls_to_tenv(decls:tuple[Var_Decl]):
+    if decls == tuple():
+        return empty_env()
+    else:
+        return extend_env(decls[0].name,decls[0].type,decls_to_tenv(decls[1:]))
+
+def defs_to_decls(defs:tuple[Var_Def],tenv) -> tuple[Var_Decl]:
+    if defs == tuple():
+        return tuple()
+    else:
+        var = defs[0].name
+        t = type_of(defs[0].expr,tenv)
+        new_tenv = extend_env(var,t,tenv)
+        ts = defs_to_decls(defs[1:],new_tenv)
+        return (Var_Decl(var,t),) + ts
+
+def subset_interface(actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
+    '''
+    Assumption : order must be same for actual and expected
+    
+    actual < expected
+    
+    interface that satisfies actual also satisfy expected.
+    
+    decl satisfy decls_1 implies decl can satisfy decls_2
+    '''
+    def recur(decls_1:tuple[Var_Decl],decls_2:tuple[Var_Decl]):
+        
+        if decls_2 == tuple():
+            return True
+        elif decls_1 == tuple():
+            return False
+        elif decls_1[0].name != decls_2[0].name:
+            return recur(decls_1[1:],decls_2)
+        elif decls_1[0].type != decls_2[0].type:
+            return False
+        else:
+            return recur(decls_1[1:],decls_2[1:])
+        
+    return recur(actual,expected)

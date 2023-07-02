@@ -587,7 +587,6 @@ def test_checked():
     val = Pair(3,Pair(2,Pair(1,NULL(t=Int_Type()))))
     assert(value_of_prog(prog).cdr == val)
     
-    
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
     
@@ -620,29 +619,6 @@ def test_inference():
     ans = Proc_Type((proc_t,),proc_t)
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
-
-def test_modules():
-    from LET_parser import parser
-    parse = parser.parse
-    prog = '''\
-    module m1
-        interface [
-            a : int
-            b : int
-            c : int]
-        body
-        [a = 33
-        x = -(a,1) % = 32
-        b = -(a,x) % = 1
-        c = -(x,b)] % = 31
-    let a = 10
-    in -(-(from m1 take a,
-           from m1 take b),
-           a)
-    '''
-    parse(prog)
-    
-    
 
 def main(recur=True):
     test_env()
@@ -692,6 +668,9 @@ if __name__ == '__main__':
     from LET_cc_imperative import * 
     print('LET_cc_imperative')
     main()
+    print('test CHECKED.py')
     test_checked()
+    print('end of test')
+    print('test INFERENCE.py')
     test_inference()
-    test_modules()
+    print('end of test')

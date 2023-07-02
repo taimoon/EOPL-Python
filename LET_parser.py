@@ -6,7 +6,7 @@ from LET_ast_node import *
 
 def p_prog(p):
     '''
-    prog : module_opt expr
+    prog : modules expr
         | expr
         | type
     '''
@@ -79,9 +79,10 @@ def p_var(p):
     p[0] =  Var_Exp(p[1])
 
 def p_null(p):
+    # TODO : ambiguous grammar
     '''
-        expr : NULL
-            | NULL '(' type ')'
+        expr : NULL '(' type ')'
+            | NULL
     '''
     match tuple(p[1:]):
         case (x,'(',t,')'):
@@ -212,9 +213,11 @@ def p_sequence(p):
             raise Exception()
 
 def p_let_exp(p):
-    """expr : LET let_pairs IN expr
+    """
+        expr : LET let_pairs IN expr
             | LETMUT let_pairs IN expr
-            | LET_STAR let_pairs IN expr"""
+            | LET_STAR let_pairs IN expr
+    """
     let_token,pairs,_,expr = p[1:]
     let_token = reserved[let_token]
     vars = tuple(map(lambda t:t[0], pairs))
@@ -368,11 +371,6 @@ def p_multi_arg_type(p):
             
 
 # Modules
-def p_module_opt(p):
-    '''module_opt : 
-        | modules'''
-    p[0] = p[1] if len(p) > 1 else None
-
 def p_modules(p):
     '''modules : module
         | module modules'''
@@ -382,16 +380,24 @@ def p_modules(p):
 
 def p_module_def(p):
     '''
-    module : MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
+    module :  MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
+        | MODULE ID INTERFACE '[' decl_opt ']' BODY modules '[' module_body_opt ']'
     '''
-    module_kw,name,interface_kw,_,declarations,_,body_kw,_,body,_ = p[1:]
-    p[0] = Module_Def(name,declarations,body)
+    modules = ()
+    match tuple(p[2:]):
+        case (name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
+            p[0] = Module_Def(name,declarations,modules,body)
+        case (name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
+            p[0] = Module_Def(name,declarations,modules,body)
+        case _:
+            raise NotImplemented
+    # module_kw,name,interface_kw,_,declarations,_,body_kw,_,body,_ = p[1:]
+    # p[0] = Module_Def(name,declarations,body)
     
 def p_decl_opt(p):
     '''decl_opt : 
         | declarations'''
     p[0] = p[1] if p[1] is not None else tuple()
-    p[0] = Interface(p[0])
 
 def p_declarations(p):
     '''declarations : decl
@@ -408,7 +414,6 @@ def p_module_body_opt(p):
     '''module_body_opt :
         | module_body'''
     p[0] = p[1] if p[1] is not None else tuple()
-    p[0] = Module_Body(p[0])
 
 def p_module_body(p):
     '''module_body : def
@@ -423,8 +428,14 @@ def p_module_body_def(p):
     p[0] = Var_Def(p[1],p[3])
     
 def p_qualified_expr(p):
-    '''expr : FROM ID TAKE ID'''
-    p[0] = Qualified_Var_Exp(p[2],p[4])
+    '''expr : FROM ID TAKE ID
+        | ID '.' ID
+    '''
+    match tuple(p[1:]):
+        case ('from',name,'take',var):
+            p[0] = Qualified_Var_Exp(name,var)
+        case (name,'.',var):
+            p[0] = Qualified_Var_Exp(name,var)
 
 # Error rule for syntax errors
 def p_error(p):
@@ -432,7 +443,7 @@ def p_error(p):
     print("Syntax error in input!")
 
 # Build the parser to make parser.parse available
-parser = yacc.yacc()
+parser = yacc.yacc(debug=True)
 
 if __name__ == '__main__':
     while True:

@@ -4,3 +4,6 @@ smol lang
 **.out
 parsetab.py
 parsetab.py
+ignore
+*.exe
+*.vscode

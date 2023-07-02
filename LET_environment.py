@@ -1,5 +1,6 @@
 from LET_ast_node import *
 from dataclasses import dataclass
+
 # Object representation
 @dataclass
 class Environment:
@@ -64,6 +65,23 @@ class Environment:
             val = self.Referenced_Rec_Proc(params,body,delayed_fn)
             env = env.extend(var,val)
         return env
+    
+    def lookup_module(self,name):
+        for var,val in self.env:
+            if var != name:
+                continue
+            elif not isinstance(val,Environment):
+                continue
+            else:
+                return val
+        raise Exception("Unbound modules",name, f"env - {self.env}")
+    def lookup_qualified_var(self,name,var):
+        env = self.lookup_module(name)
+        return env.apply(var)
+
+@dataclass
+class Simple_Module(Environment):
+    pass
 
 
 def empty_env():
@@ -167,3 +185,12 @@ def extend_nameless_env(val,env):
 
 def apply_nameless_env(env,addr):
     return env[addr]
+
+def extend_env_with_module(module_name,bindings:Environment,env):
+    return extend_env(module_name,bindings,env)
+
+def lookup_module_name(name,env:Environment):
+    return env.lookup_module(name)
+
+def lookup_qualified_var(name,var,env:Environment):
+    return env.lookup_qualified_var(name,var)
