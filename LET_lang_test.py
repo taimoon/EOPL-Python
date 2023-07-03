@@ -120,7 +120,7 @@ def test_proc_multi():
     '''
     assert(value_of_prog(prog) == 10)
     
-    prog = '''1
+    prog = '''
         let add = proc(x,y) -(x,-y)
         in (add 3 7)
     '''
