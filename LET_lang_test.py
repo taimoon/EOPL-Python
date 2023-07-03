@@ -3,20 +3,17 @@ sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
 
 def test_env():
-    env = init_env()
-    env = extend_env('x',7,env)
-    env = extend_env('i', 1, env)
-    env = extend_env('v', 5, env)
-    env = extend_env('x', 10, env)
+    env = extend_env_from_pairs(('x','v','i','x'),
+                                (10,5,1,7),
+                                init_env())
     assert(apply_env(env,'i') == 1)
     assert(apply_env(env,'v') == 5)
     assert(apply_env(env,'x') == 10)
 
 def test_diff_exp():
-    env = init_env()
-    env = extend_env('i', 1, env)
-    env = extend_env('v', 5, env)
-    env = extend_env('x', 10, env)
+    env = extend_env_from_pairs(('i','v','x'),
+                                (1,5,10),
+                                init_env())
     prog = '-(x,3)'
     assert(value_of_prog(prog,env) == 7)
     prog = '-(-(x,3),-(v,i))'
@@ -27,35 +24,25 @@ def test_bi_exp():
     assert(value_of_prog(prog) == 5)
     prog = '''--(-5,9)'''
     assert(value_of_prog(prog) == 14)
-    
     prog = '''minus(-(minus(5),9))'''
     assert(value_of_prog(prog) == 14)
-    
-    prog = '+(-2,10)'
-    assert(value_of_prog(prog) == 8)
-    prog = '*(-7,13)'
-    assert(value_of_prog(prog) == -7*13)
-    prog = '/(15,3)'
-    assert(value_of_prog(prog) == 15/3)
-    prog = '''let  celsius_to_fahr = proc (c) +(*(/(9,5),c),32)
-    in (celsius_to_fahr 32)
-    '''
+    prog = '+(*(/(9,5),32),32)'
     assert(value_of_prog(prog) == 9/5*32+32)
     prog = 'less?(1,2)'
-    assert(value_of_prog(prog) == True)
+    assert(value_of_prog(prog) is True)
     prog = 'less?(0,-2)'
-    assert(value_of_prog(prog) == False)
+    assert(value_of_prog(prog) is False)
     prog = 'equal?(2,2)'
-    assert(value_of_prog(prog) == True)
+    assert(value_of_prog(prog) is True)
+    prog = 'equal?(1,2)'
+    assert(value_of_prog(prog) is False)
     prog = 'greater?(1,2)'
-    assert(value_of_prog(prog) == False)
+    assert(value_of_prog(prog) is False)
     prog = 'greater?(0,-2)'
-    assert(value_of_prog(prog) == True)
+    assert(value_of_prog(prog) is True)
 
 def test_if():
-    env = init_env()
-    env = extend_env('x',33, 
-                    extend_env('y',22, env))
+    env = extend_env_from_pairs(('x','y'),(33,22),init_env())
     prog = 'if zero?(-(x,11)) then -(y,2)  else -(y,4)'
     assert(value_of_prog(prog,env) == 18)
 
@@ -68,18 +55,18 @@ def test_cond():
                 else x
             end
         in (abs {x})
-        '''
+    '''
     assert(value_of_prog(prog(-10)) == 10)
     assert(value_of_prog(prog(0)) == 0)
     assert(value_of_prog(prog(10)) == 10)
     
     prog = lambda x : f'''\
-    let le = proc(x)
-        cond 
-            zero?(x) => zero?(0)
-            less?(x,0) => zero?(0)
-        end
-    in (le {x})
+        let le = proc(x)
+            cond 
+                zero?(x) => zero?(0)
+                less?(x,0) => zero?(0)
+            end
+        in (le {x})
     '''
     assert(value_of_prog(prog(-10)) is True)
     assert(value_of_prog(prog(0)) is True)
@@ -94,13 +81,12 @@ def test_let():
           in let x = 3
             in let y = -(x,1)
               in let x = 4
-                in -(z,-(x,y))'''
+                in -(z,-(x,y))
+    '''
     assert(value_of_prog(prog) == 3)  
 
 def test_proc_1():
-    prog = '''let f = proc () 13
-    in (f)
-    '''
+    prog = 'let f = proc () 13 in (f)'
     assert(value_of_prog(prog) == 13)
     prog = '''\
         let f = proc (x) -(x,11)
@@ -128,34 +114,31 @@ def test_proc_1():
         assert(value_of_prog(prog) == -100) # lexical scope
     
 def test_proc_multi():
-    print('test_proc_multi')
-
-    prog = '''\
-    let add = proc(x) proc(y) -(x,-(0,y))
-    in ((add 3) 7)
+    prog = '''
+        let add = proc(x) proc(y) -(x,-(0,y))
+        in ((add 3) 7)
     '''
     assert(value_of_prog(prog) == 10)
     
-    prog = '''\
+    prog = '''1
         let add = proc(x,y) -(x,-y)
         in (add 3 7)
-        '''
+    '''
     assert(value_of_prog(prog) == 10)
     
-    prog = '''\
+    prog = '''
         let add = proc(x,y) -(x,-y)
         in let add_3 = proc(x,y,z) (add x (add y z))
-        in (add_3 3 7 11)
-        '''
+            in (add_3 3 7 11)
+    '''
     assert(value_of_prog(prog) == 21)
-    print('end_of_testing_proc_multi')
 
 def test_let_multi():
     prog = '''\
         let x = 30
         in let x = -(x,1)
                 y = -(x,2)
-        in -(x,y)'''
+            in -(x,y)'''
     assert(value_of_prog(prog) == 1)
     
     prog = '''\
@@ -167,6 +150,7 @@ def test_let_multi():
     assert(value_of_prog(prog) == -26)
 
 def test_proc_dynamic():
+    # TODO : Implement dynamic
     prog = '''\
         let a = 3
         in let 
@@ -192,48 +176,40 @@ def test_proc_dynamic():
 def test_let_star():
     prog = '''\
         let x = 30
-            in let* x = -(x,1) y = -(x,2)
+        in let* x = -(x,1) y = -(x,2)
             in -(x,y)'''
     assert(value_of_prog(prog) == 2)
 
 def test_dat_struct():
     prog = 'cons(1,cons(2,3))'
-    # print(value_of_prog(prog))
+
     assert(str(value_of_prog(prog)) == '(1 (2 . 3))')
     
     prog = 'cons(1,cons(2,cons(3,emptylist)))'
     assert(str(value_of_prog(prog)) == '(1 2 3)')
     
-    prog ='''\
-    car(cons(1,2))'''
+    prog ='car(cons(1,2))'
     assert(value_of_prog(prog) == 1)
-    prog ='''\
-    cdr(cons(1,2))'''
+    prog ='cdr(cons(1,2))'
     assert(value_of_prog(prog) == 2)
     prog = '''\
-    let x = 4
-    in cons(x,
-            cons(cons(-(x,1),
-            emptylist),
-            emptylist))'''
+        let x = 4 
+        in cons(x,cons(cons(-(x,1),emptylist),emptylist))'''
     assert(str(value_of_prog(prog)) == '(4 (3))')
     
-    prog = '''\
-        list(1,2,3,4)'''
+    prog = 'list(1,2,3,4)'
     assert(str(value_of_prog(prog)) == '(1 2 3 4)')
     
-    prog = '''\
-        list(list(1,2),list(3,4))'''
+    prog = 'list(list(1,2),list(3,4))'
     assert(str(value_of_prog(prog)) == '((1 2) (3 4))')
-    prog = '''\
-        list(cons(1,2),cons(3,4))'''
+    prog = 'list(cons(1,2),cons(3,4))'
     assert(str(value_of_prog(prog)) == '((1 . 2) (3 . 4))')
     prog = '''\
         let x = 4
         in list(x,-(x,1), -(x,3))'''
     assert(str(value_of_prog(prog)) == '(4 3 1)')
     
-    prog = '''list()'''
+    prog = 'list()'
     assert(str(value_of_prog(prog)) == '()')
 
 def test_unpack_op():
@@ -310,6 +286,20 @@ def test_letrec():
         = if zero? (x) then 0 else -((mult -(x,1) y), -(0,y))
     in (mult 7 23)'''
     assert(value_of_prog(prog) == 7*23)
+    
+    prog = '''\
+        letrec fact (n) = if zero?(n) then 1 else *(n,(fact -(n,1)))
+        in (fact 4)
+    '''
+    from math import factorial
+    assert(value_of_prog(prog) == factorial(4))
+    
+    prog = '''\
+        letrec fact_iter (n,acm) = if zero?(n) then acm else (fact_iter -(n,1) *(n,acm))
+        in let fact = proc (x) (fact_iter x 1) in
+            (fact 4)
+    '''
+    assert(value_of_prog(prog) == factorial(4))
 
 def test_letrec_multi():
     prog = '''\
@@ -362,21 +352,6 @@ def test_letrec_multi():
     ans = sum([i for i in range(6+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
     
-def test_letrec2():
-    prog = '''\
-        letrec fact (n) = if zero?(n) then 1 else *(n,(fact -(n,1)))
-        in (fact 4)
-    '''
-    from math import factorial
-    assert(value_of_prog(prog) == factorial(4))
-    
-    prog = '''\
-        letrec fact_iter (n,acm) = if zero?(n) then acm else (fact_iter -(n,1) *(n,acm))
-        in let fact = proc (x) (fact_iter x 1) in
-            (fact 4)
-    '''
-    assert(value_of_prog(prog) == factorial(4))
-
 def test_swap():
     prog = '''\
     letmutable f = proc (x) set x = 44
@@ -633,16 +608,13 @@ def main(recur=True):
     test_bi_exp()
     
     test_proc_1()
-    # test_proc_dynamic()
     test_proc_multi()
     test_y_combinator()
     
     if recur == True:
         test_letrec()
-        test_letrec2()
         test_letrec_multi()
-        
-    # test_other_repr()
+    
     print('pass all test')
 
 if __name__ == '__main__':

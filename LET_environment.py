@@ -90,6 +90,13 @@ def empty_env():
 def extend_env(var,val,env:Environment):
     return env.extend(var,val)
 
+def extend_env_from_pairs(vars:tuple,vals:tuple,env:Environment = None):
+    if vars == ():
+        return empty_env() if env is None else env
+    else:
+        return extend_env(vars[0],vals[0],
+                          extend_env_from_pairs(vars[1:],vals[1:],env))
+
 def extend_env_rec(var,params,body,env:Environment):
     return env.extend_rec(var,params,body)
 
