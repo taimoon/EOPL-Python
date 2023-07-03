@@ -13,8 +13,7 @@ def value_of_prog(prog, env = init_env(), parse = parser.parse):
 def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
     if isinstance(proc,Primitve_Implementation):
         return apply_primitive(proc,args)
-    for param,arg in zip(proc.params,args):
-        env = extend_env(param,arg,env)
+    env = extend_env_from_pairs(tuple(proc.params),tuple(args),env)
     return value_of(proc.body, env)
 
 def apply_primitive(prim:Primitive_Exp,args):
@@ -66,13 +65,12 @@ def value_of(expr, env):
             if vars == ():
                 return expr.body
             else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+                return Let_Exp((vars[0],),(exprs[0],),expand(vars[1:],exprs[1:]))
         return value_of(expand(expr.vars,expr.exps),env)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause],otherwise=expr.otherwise):
             if clauses[1:] == ():
-                if otherwise is None:
-                    otherwise = Zero_Test_Exp(Const_Exp(1))
+                otherwise = Zero_Test_Exp(Const_Exp(1)) if otherwise is None else otherwise
                 return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
@@ -85,8 +83,8 @@ def value_of(expr, env):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
         return value_of(App_Exp(operator = Proc_Exp(expr.vars,expr.expr),
-                                operand  = (Unpack_Exp(None,expr.list_expr,None),)
-                                ),env)
+                                operand  = (Unpack_Exp(None,expr.list_expr,None),))
+                        ,env)
     else:
         raise Exception("Uknown LET expression type", expr)
 

@@ -24,6 +24,11 @@ class Diff_Exp:
     right:typing.Any
 
 @dataclass
+class Zero_Test_Exp:
+    'Deprecated : As derived form using Primitive_Exp; see LET_parser'
+    exp:typing.Any
+
+@dataclass
 class Primitve_Implementation:
     'interpreter data struct'
     op:typing.Any
@@ -41,11 +46,6 @@ class Bi_Op:
 @dataclass
 class Unary_Op:
     op:typing.Any
-
-@dataclass
-class Zero_Test_Exp:
-    'Deprecated : As derived form using Primitive_Exp; see LET_parser'
-    exp:typing.Any
 
 @dataclass
 class Var_Exp:

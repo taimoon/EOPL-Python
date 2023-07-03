@@ -79,11 +79,6 @@ class Environment:
         env = self.lookup_module(name)
         return env.apply(var)
 
-@dataclass
-class Simple_Module(Environment):
-    pass
-
-
 def empty_env():
     return Environment()
 
@@ -119,10 +114,6 @@ def init_tenv():
               'equal?'  : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
               'zero?'   : Proc_Type((Int_Type(),),Bool_Type()),
               'minus'   : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
-            #   'car'     : car,
-            #   'cdr'     : cdr,
-            #   'list'    : list_to_pair,
-            #   'print'   : print,
             }
     env = empty_env()
     for var,val in corspd.items():

@@ -1,7 +1,7 @@
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
-
+from LET_environment import *
 def test_env():
     env = extend_env_from_pairs(('x','v','i','x'),
                                 (10,5,1,7),
@@ -10,7 +10,7 @@ def test_env():
     assert(apply_env(env,'v') == 5)
     assert(apply_env(env,'x') == 10)
 
-def test_diff_exp():
+def test_diff_exp(value_of_prog):
     env = extend_env_from_pairs(('i','v','x'),
                                 (1,5,10),
                                 init_env())
@@ -19,7 +19,7 @@ def test_diff_exp():
     prog = '-(-(x,3),-(v,i))'
     assert(value_of_prog(prog,env) == 3.0)
 
-def test_bi_exp():
+def test_bi_exp(value_of_prog):
     prog = "-(7,2)"
     assert(value_of_prog(prog) == 5)
     prog = '''--(-5,9)'''
@@ -41,12 +41,12 @@ def test_bi_exp():
     prog = 'greater?(0,-2)'
     assert(value_of_prog(prog) is True)
 
-def test_if():
+def test_if(value_of_prog):
     env = extend_env_from_pairs(('x','y'),(33,22),init_env())
     prog = 'if zero?(-(x,11)) then -(y,2)  else -(y,4)'
     assert(value_of_prog(prog,env) == 18)
 
-def test_cond():
+def test_cond(value_of_prog):
     prog = lambda x :f'''\
         let abs = proc(x) 
             cond 
@@ -72,7 +72,7 @@ def test_cond():
     assert(value_of_prog(prog(0)) is True)
     assert(value_of_prog(prog(10)) is False)
 
-def test_let():
+def test_let(value_of_prog):
     prog = 'let x=5 in -(x,3)'
     assert(value_of_prog(prog) == 2)
 
@@ -85,7 +85,7 @@ def test_let():
     '''
     assert(value_of_prog(prog) == 3)  
 
-def test_proc_1():
+def test_proc_1(value_of_prog):
     prog = 'let f = proc () 13 in (f)'
     assert(value_of_prog(prog) == 13)
     prog = '''\
@@ -113,7 +113,7 @@ def test_proc_1():
     else:
         assert(value_of_prog(prog) == -100) # lexical scope
     
-def test_proc_multi():
+def test_proc_multi(value_of_prog):
     prog = '''
         let add = proc(x) proc(y) -(x,-(0,y))
         in ((add 3) 7)
@@ -133,7 +133,7 @@ def test_proc_multi():
     '''
     assert(value_of_prog(prog) == 21)
 
-def test_let_multi():
+def test_let_multi(value_of_prog):
     prog = '''\
         let x = 30
         in let x = -(x,1)
@@ -149,7 +149,7 @@ def test_let_multi():
         in -(-(x,y),z)'''
     assert(value_of_prog(prog) == -26)
 
-def test_proc_dynamic():
+def test_proc_dynamic(value_of_prog):
     # TODO : Implement dynamic
     prog = '''\
         let a = 3
@@ -173,14 +173,14 @@ def test_proc_dynamic():
     else:
         assert(value_of_prog(prog) == 3) # for lexical binding
     
-def test_let_star():
+def test_let_star(value_of_prog):
     prog = '''\
         let x = 30
         in let* x = -(x,1) y = -(x,2)
             in -(x,y)'''
     assert(value_of_prog(prog) == 2)
 
-def test_dat_struct():
+def test_dat_struct(value_of_prog):
     prog = 'cons(1,cons(2,3))'
 
     assert(str(value_of_prog(prog)) == '(1 (2 . 3))')
@@ -212,7 +212,7 @@ def test_dat_struct():
     prog = 'list()'
     assert(str(value_of_prog(prog)) == '()')
 
-def test_unpack_op():
+def test_unpack_op(value_of_prog):
     prog = '''\
         let u = 7
         in unpack x y = cons(u,cons(3,emptylist))
@@ -224,7 +224,7 @@ def test_unpack_op():
         '''
     assert(value_of_prog(prog) == 7)
 
-def test_y_combinator():
+def test_y_combinator(value_of_prog):
     # y combinator might be too deep for python
     # don't use values that's too big
     prog = '''\
@@ -268,7 +268,7 @@ def test_y_combinator():
     fact = lambda n : 1 if n <= 1 else n*fact(n-1)
     assert(value_of_prog(prog) == fact(x)) 
 
-def test_letrec():
+def test_letrec(value_of_prog):
     prog = '''\
     letrec double (x)
         = if zero? (x) then 0 else -((double -(x,1)), -2)
@@ -301,7 +301,7 @@ def test_letrec():
     '''
     assert(value_of_prog(prog) == factorial(4))
 
-def test_letrec_multi():
+def test_letrec_multi(value_of_prog):
     prog = '''\
         letrec
             even(x) = if zero?(x) then 1 else (odd -(x,1))
@@ -352,7 +352,7 @@ def test_letrec_multi():
     ans = sum([i for i in range(6+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
     
-def test_swap():
+def test_swap(value_of_prog):
     prog = '''\
     letmutable f = proc (x) set x = 44
     in letmutable g = proc (y) (f y)
@@ -391,7 +391,7 @@ def test_swap():
     '''
     assert(value_of_prog(prog) == 11)
     
-def test_sequence():
+def test_sequence(value_of_prog):
     prog = '''\
     let g = let counter = newref(0)
             in proc (dummy)
@@ -425,7 +425,7 @@ def test_sequence():
     '''
     assert(value_of_prog(prog) == 1)
 
-def test_laziness():
+def test_laziness(value_of_prog):
     prog ='''\
     letrec infinite_loop (x) = (infinite_loop -(x,-1))
     in let f = proc (z) 11
@@ -595,51 +595,51 @@ def test_inference():
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
 
-def main(recur=True):
+def main(value_of_prog,recur=True):
     test_env()
-    test_diff_exp()
-    test_if()
-    test_cond()
-    test_let()
-    test_let_multi()
-    test_let_star()
-    test_dat_struct()
-    test_unpack_op()
-    test_bi_exp()
+    test_diff_exp(value_of_prog)
+    test_if(value_of_prog)
+    test_cond(value_of_prog)
+    test_let(value_of_prog)
+    test_let_multi(value_of_prog)
+    test_let_star(value_of_prog)
+    test_dat_struct(value_of_prog)
+    test_unpack_op(value_of_prog)
+    test_bi_exp(value_of_prog)
     
-    test_proc_1()
-    test_proc_multi()
-    test_y_combinator()
+    test_proc_1(value_of_prog)
+    test_proc_multi(value_of_prog)
+    test_y_combinator(value_of_prog)
     
     if recur == True:
-        test_letrec()
-        test_letrec_multi()
+        test_letrec(value_of_prog)
+        test_letrec_multi(value_of_prog)
     
     print('pass all test')
 
 if __name__ == '__main__':
-    from LET import *           # all test
     print('LET')
-    main()
-    from NAMELESS_LET import *  # except  recursion
+    from LET import value_of_prog
+    main(value_of_prog)
+    from NAMELESS_LET import value_of_prog  # except  recursion
     print('NAMELESS_LET')
-    main(recur=False)
-    from EXPLICIT_REFS import * # all test
+    main(value_of_prog,recur=False)
+    from EXPLICIT_REFS import value_of_prog # all test
     print('EXPLICIT_REFS')
-    main()
-    test_sequence()
-    from IMPLICIT_REFS import * # all test
+    main(value_of_prog)
+    test_sequence(value_of_prog)
+    from IMPLICIT_REFS import value_of_prog # all test
     print('IMPLICIT_REFS')
-    main()
-    test_sequence()
-    test_swap()
-    test_laziness()
-    from LET_cc import * 
+    main(value_of_prog)
+    test_sequence(value_of_prog)
+    test_swap(value_of_prog)
+    test_laziness(value_of_prog)
+    from LET_cc import value_of_prog 
     print('LET_cc')
-    main()
-    from LET_cc_imperative import * 
+    main(value_of_prog)
+    from LET_cc_imperative import value_of_prog 
     print('LET_cc_imperative')
-    main()
+    main(value_of_prog)
     print('test CHECKED.py')
     test_checked()
     print('end of test')

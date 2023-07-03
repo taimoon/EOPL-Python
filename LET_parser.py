@@ -251,15 +251,16 @@ def p_letrec_exp(p):
         vars = tuple(map(lambda t: t[1], let_pairs))
         paramss = tuple(map(lambda t: tuple(p[0] for p in t[2]), let_pairs))
         arg_types = tuple(map(lambda t: tuple(p[1] for p in t[2]), let_pairs))
-        exprs = tuple(map(lambda t: t[3], let_pairs))
-        p[0] = Rec_Proc(vars,paramss,exprs,p[4],
+        exps = tuple(map(lambda t: t[3], let_pairs))
+        expr = p[4]
+        p[0] = Rec_Proc(vars,paramss,exps,expr,
                         res_types=res_types,arg_types=arg_types)
     else:
         vars = tuple(map(lambda t: t[0], let_pairs))
         paramss = tuple(map(lambda t: t[1], let_pairs))
-        exprs = tuple(map(lambda t: t[2], let_pairs))
-
-        p[0] = Rec_Proc(vars,paramss,exprs, p[4])
+        exps = tuple(map(lambda t: t[2], let_pairs))
+        expr = p[4]
+        p[0] = Rec_Proc(vars,paramss,exps,expr)
 
 def p_letrec_pairs(p):
     '''
