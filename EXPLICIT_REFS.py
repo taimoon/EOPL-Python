@@ -20,7 +20,9 @@ def value_of(expr, env):
     elif isinstance(expr, Var_Exp):
         return apply_env(env, expr.var)
     elif isinstance(expr, Diff_Exp):
-        return value_of(expr.left,env) - value_of(expr.right,env)
+        left_val = value_of(expr.left,env)
+        right_val = value_of(expr.right,env)
+        return left_val - right_val
     elif isinstance(expr, Zero_Test_Exp):
         return value_of(expr.exp,env) == 0
     elif isinstance(expr, Branch):
