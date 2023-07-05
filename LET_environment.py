@@ -6,16 +6,14 @@ from dataclasses import dataclass
 class Environment:
     env:tuple = ()
     @dataclass
-    class Delayed_Rec_Proc:
+    class Rec_Proc:
         params:None
         body:None
-        delayed_env:None
+        delayed_env:None    
     
-    @dataclass
-    class Referenced_Rec_Proc:
-        params:None
-        body:None
-        delayed_env:None
+    class Delayed_Rec_Proc(Rec_Proc): pass
+    class Referenced_Rec_Proc(Rec_Proc): pass
+    class Nameless_Rec_Proc(Rec_Proc): pass
     
     def __str__(self) -> str:
         return f'(env {str(tuple(p[0] for p in self.env))})'
@@ -44,6 +42,14 @@ class Environment:
                 return val
         raise Exception("Unbound variable",src_var,f"env - {self.env}")
     
+    def apply_senv(self,src_var):
+        for lex_addr,(var,val) in enumerate(self.env):
+            if var != src_var: continue
+            if isinstance(val,self.Nameless_Rec_Proc):
+                raise NotImplemented
+            return lex_addr
+        raise Exception("Unbound variable",src_var,f"env - {self.env}")
+
     def extend_rec(self,var,params,body):
         delayed_fn = lambda:self.extend_rec(var,params,body)
         val = self.Delayed_Rec_Proc(params,body,delayed_fn)
@@ -57,7 +63,7 @@ class Environment:
             val = self.Delayed_Rec_Proc(params,body,delayed_fn)
             env = env.extend(var,val)
         return env
-    
+
     def extend_env_rec_ref(self,vars,paramss,bodys):
         delayed_fn = lambda:self.extend_env_rec_ref(vars,paramss,bodys)
         env = self
@@ -75,6 +81,7 @@ class Environment:
             else:
                 return val
         raise Exception("Unbound modules",name, f"env - {self.env}")
+    
     def lookup_qualified_var(self,name,var):
         env = self.lookup_module(name)
         return env.apply(var)
@@ -164,13 +171,7 @@ def extend_senv(var,env:Environment):
     return env.extend(var,None)
 
 def apply_senv(env:Environment,src_var):
-    for lex_addr,(var,_) in enumerate(env.env):
-        if var == src_var:
-            return lex_addr
-    raise Exception("Unbound variable",src_var,f"env - {env.env}")
-
-def nameless_env(obj):
-    return isinstance(obj,list)
+    return env.apply_senv(src_var)
 
 def is_nameless_env(env):
     return isinstance(env,tuple)

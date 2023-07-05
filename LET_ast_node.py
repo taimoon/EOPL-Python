@@ -228,6 +228,12 @@ class Nameless_Proc_Exp:
     body:typing.Any
 
 @dataclass
+class Nameless_Let_Exp:
+    'nameless LET data structure'
+    exps:tuple[typing.Any]
+    body:typing.Any
+
+@dataclass
 class Sequence:
     exps:typing.Any
     

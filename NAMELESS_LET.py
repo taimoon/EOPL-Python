@@ -58,14 +58,20 @@ def translation_of(expr,static_env):
             args = tuple(args)
         return App_Exp(proc,args)
     elif isinstance(expr, Rec_Proc):
-        # return translation_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,static_env))
         raise NotImplemented
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
     elif isinstance(expr,Pair_Exp):
         return translation_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),static_env)
     elif isinstance(expr,Let_Exp):
-        return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
+        # derived form
+        # return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
+        new_senv = static_env
+        exps = ()
+        for var in expr.vars: 
+            new_senv = extend_senv(var,new_senv)
+        exps = tuple(translation_of(exp,static_env) for exp in expr.exps)
+        return Nameless_Let_Exp(exps,translation_of(expr.body,new_senv))
     elif isinstance(expr,Let_Star_Exp):
         def expand(vars,exprs):
             if vars == ():
@@ -91,7 +97,7 @@ def translation_of(expr,static_env):
     else:
         raise Exception("Uknown LET expression type", expr)
 
-def value_of(expr, nameless_env):    
+def value_of(expr, nameless_env):
     if isinstance(expr, Const_Exp):
         return expr.val
     elif isinstance(expr, Nameless_Var_Exp):
@@ -110,6 +116,11 @@ def value_of(expr, nameless_env):
             return value_of(expr.alter,nameless_env)
     elif isinstance(expr, Nameless_Proc_Exp):
         return Proc_Val(None,expr.body,nameless_env)
+    elif isinstance(expr,Nameless_Let_Exp):
+        new_env = nameless_env
+        for exp in expr.exps:
+            new_env = extend_nameless_env(value_of(exp,nameless_env),new_env)
+        return value_of(expr.body,new_env)
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,nameless_env)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):

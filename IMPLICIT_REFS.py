@@ -9,6 +9,7 @@ deref(expr)
 letmutable {id = expr}+ in expr
 # all variables are mutable unless introduced by let
 '''
+
 def init_env():
     from LET_environment import init_env
     corspd = get_all_primitive_implementation()
