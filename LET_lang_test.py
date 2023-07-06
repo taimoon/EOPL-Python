@@ -352,45 +352,6 @@ def test_letrec_multi(value_of_prog):
     ans = sum([i for i in range(6+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
     
-def test_swap(value_of_prog):
-    prog = '''\
-    letmutable f = proc (x) set x = 44
-    in letmutable g = proc (y) (f y)
-        in letmutable z = 55
-            in begin (g z); z end
-    '''
-    assert(value_of_prog(prog) == 44)
-    prog = '''\
-    let swap = proc (x,y)
-        let temp = x
-        in begin
-            set x = y;
-            set y = temp
-            end
-    in letmutable a = 33
-           b = 44
-        in begin
-            (swap a b);
-            -(a,b)
-            end
-    '''
-    assert(value_of_prog(prog) == 11)
-    prog = '''\
-    let swap = proc (x,y)
-        let temp = deref(x)
-        in begin
-            setref(x,deref(y));
-            setref(y,temp)
-            end
-    in letmutable a = 33
-           b = 44
-        in begin
-            (swap ref(a) ref(b));
-            -(a,b)
-            end
-    '''
-    assert(value_of_prog(prog) == 11)
-    
 def test_sequence(value_of_prog):
     prog = '''\
     let g = let counter = newref(0)
@@ -423,6 +384,48 @@ def test_sequence(value_of_prog):
     in begin setref(x,13); (odd) end
     '''
     assert(value_of_prog(prog) == 1)
+
+def test_swap(value_of_prog):
+    'test call-by-reference'
+    prog = '''\
+    letmutable f = proc (x) set x = 44
+    in letmutable g = proc (y) (f y)
+        in letmutable z = 55
+            in begin (g z); z end
+    '''
+    assert(value_of_prog(prog) == 44)
+    prog = '''\
+    let swap = proc (x,y)
+        let temp = x
+        in begin
+            set x = y;
+            set y = temp
+            end
+    in letmutable a = 33
+           b = 44
+        in begin
+            (swap a b);
+            -(a,b)
+            end
+    '''
+    assert(value_of_prog(prog) == 11)
+
+def test_ref(value_of_prog):
+    prog = '''\
+    let swap = proc (x,y)
+        let temp = deref(x)
+        in begin
+            setref(x,deref(y));
+            setref(y,temp)
+            end
+    in letmutable a = 33
+           b = 44
+        in begin
+            (swap ref(a) ref(b));
+            -(a,b)
+            end
+    '''
+    assert(value_of_prog(prog) == 11)
 
 def test_laziness(value_of_prog):
     prog ='''\
@@ -594,7 +597,7 @@ def test_inference():
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
 
-def test_all(value_of_prog,recur=True):
+def test_all(value_of_prog):
     test_env()
     test_diff_exp(value_of_prog)
     test_if(value_of_prog)
@@ -610,9 +613,8 @@ def test_all(value_of_prog,recur=True):
     test_proc_multi(value_of_prog)
     test_y_combinator(value_of_prog)
     
-    if recur == True:
-        test_letrec(value_of_prog)
-        test_letrec_multi(value_of_prog)
+    test_letrec(value_of_prog)
+    test_letrec_multi(value_of_prog)
     
     print('pass all test')
 
@@ -622,7 +624,7 @@ if __name__ == '__main__':
     test_all(value_of_prog)
     from NAMELESS_LET import value_of_prog
     print('NAMELESS_LET')
-    test_all(value_of_prog,recur=True)
+    test_all(value_of_prog)
     from EXPLICIT_REFS import value_of_prog
     print('EXPLICIT_REFS')
     test_all(value_of_prog)
@@ -635,6 +637,12 @@ if __name__ == '__main__':
     print('IMPLICIT_REFS')
     test_all(value_of_prog)
     test_sequence(value_of_prog)
+    test_ref(value_of_prog)
+    from LAZY_LET import value_of_prog
+    print('LAZY_LET')
+    test_all(value_of_prog)
+    test_sequence(value_of_prog)
+    test_ref(value_of_prog)
     test_swap(value_of_prog)
     test_laziness(value_of_prog)
     from LET_cc import value_of_prog 

@@ -6,7 +6,6 @@ from memory import *
 newref(expr)
 setref(expr)
 deref(expr)
-ref(var) % &ptr similiar to C's pointer and address
 letmutable {id = expr}+ in expr
 # all variables are mutable unless introduced by let
 '''
@@ -32,11 +31,20 @@ def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return value_of(parse(prog), change_init_env(env))
 
 def apply_proc(proc:Proc_Val,args,env:Environment):
-    if isinstance(proc, Primitve_Implementation):
-        return proc.op(*args)
     for param,arg in zip(proc.params,args):
-        env = extend_env(param,newref(arg),env)
+        # env = extend_env(param,newref(arg),env)
+        env = extend_env(param,arg,env)
     return value_of(proc.body, env)
+
+def value_of_operand(expr, env):
+    'implementing pass-by-reference'
+    if isinstance(expr,Var_Exp):
+        return apply_env(env,expr.var)
+    else:
+        return newref(Thunk(expr,env))
+
+def value_of_thunk(expr:Thunk):
+    return value_of(expr.expr,expr.env)
 
 def value_of(expr, env):
     if isinstance(expr, Const_Exp):
@@ -45,6 +53,8 @@ def value_of(expr, env):
         res = apply_env(env, expr.var)
         if isinstance(res,Immutable):
             return res.val
+        elif isinstance(deref(res),Thunk):
+            return value_of_thunk(deref(res))
         else:
             return deref(res)
     elif isinstance(expr, Diff_Exp):
@@ -57,14 +67,20 @@ def value_of(expr, env):
         else:
             return value_of(expr.alter,env)
     elif isinstance(expr, Proc_Exp):
-        return Proc_Val(expr.params,expr.body,env)
+        # return Proc_Val(expr.params,expr.body,empty_env()) # dynamic scoping
+        return Proc_Val(expr.params,expr.body,env) # lexical scoping
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,env)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
+            # unpack doesn't pass variable by reference
             args = value_of(expr.operand[0].list_expr,env)
-        else:
+            args = map(lambda o: newref(o),args)
+        elif isinstance(proc, Primitve_Implementation):
             args = map(lambda o : value_of(o, env), expr.operand)
-        return apply_proc(proc,args,proc.env)
+            return proc.op(*args)
+        else:
+            args = map(lambda o : value_of_operand(o, env), expr.operand)
+        return apply_proc(proc,args,proc.env) # lexical scoping
     elif isinstance(expr, Rec_Proc):
         # extend_env_rec_ref(expr.var,expr.params,expr.body,env)
         return value_of(expr.expr, extend_env_rec_ref(expr.var,expr.params,expr.body,env))
