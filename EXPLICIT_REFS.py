@@ -31,8 +31,7 @@ def value_of(expr, env):
         else:
             return value_of(expr.alter,env)
     elif isinstance(expr, Proc_Exp):
-        # return Proc_Val(expr.params,expr.body,empty_env()) # dynamic scoping
-        return Proc_Val(expr.params,expr.body,env) # lexical scoping
+        return Proc_Val(expr.params,expr.body,env)
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,env)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):

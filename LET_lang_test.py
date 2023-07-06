@@ -627,6 +627,10 @@ if __name__ == '__main__':
     print('EXPLICIT_REFS')
     test_all(value_of_prog)
     test_sequence(value_of_prog)
+    print('Store_Passing_Refs')
+    from STORE_PASSING_LET import value_of_prog
+    test_all(value_of_prog)
+    test_sequence(value_of_prog)
     from IMPLICIT_REFS import value_of_prog
     print('IMPLICIT_REFS')
     test_all(value_of_prog)

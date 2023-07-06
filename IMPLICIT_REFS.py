@@ -115,7 +115,7 @@ def value_of(expr, env):
         res = apply_env(env,expr.var)
         if not is_reference(res):
             raise Exception(f"error : attempt to modify immutable variable {expr.var}")
-        setref(apply_env(env,expr.var),value_of(expr.expr,env))
+        setref(res,value_of(expr.expr,env))
     # derived form
     elif isinstance(expr, Primitive_Exp):
         return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
