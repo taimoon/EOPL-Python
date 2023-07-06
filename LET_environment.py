@@ -45,22 +45,13 @@ class Environment:
     def apply_senv(self,src_var):
         for lex_addr,(var,val) in enumerate(self.env):
             if var != src_var: continue
-            if isinstance(val,Nameless_Rec_Var_Exp):
-                return Nameless_Rec_Var_Exp(lex_addr)
-            else:
-                return Nameless_Var_Exp(lex_addr)
+            return lex_addr
         raise Exception("Unbound variable",src_var,f"env - {self.env}")
 
     def extend_rec(self,var,params,body):
         delayed_fn = lambda:self.extend_rec(var,params,body)
         val = self.Delayed_Rec_Proc(params,body,delayed_fn)
         return self.extend(var,val)
-    
-    def extend_senv_rec(self,vars):
-        env = self
-        for var in vars:
-            env = env.extend(var,Nameless_Rec_Var_Exp(0))
-        return env
 
     def extend_env_rec_multi(self,vars,paramss,bodys):
         # don't nest delayed_fn into recur
@@ -180,9 +171,6 @@ def extend_senv(var,env:Environment):
 def extend_senv_vars(vars,env:Environment):
     for var in vars: env = extend_senv(var,env)
     return env
-
-def extend_senv_rec(vars,env:Environment):
-    return env.extend_senv_rec(vars)
 
 def apply_senv(env:Environment,src_var):
     return env.apply_senv(src_var)

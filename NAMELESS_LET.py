@@ -30,7 +30,7 @@ def translation_of(expr,static_env):
     if isinstance(expr, Const_Exp):
         return expr
     elif isinstance(expr, Var_Exp):
-        return apply_senv(static_env, expr.var)
+        return Nameless_Var_Exp(apply_senv(static_env, expr.var))
     elif isinstance(expr, Diff_Exp):
         return Diff_Exp(translation_of(expr.left,static_env),translation_of(expr.right,static_env))
     elif isinstance(expr, Zero_Test_Exp):
@@ -54,7 +54,7 @@ def translation_of(expr,static_env):
             args = tuple(args)
         return App_Exp(proc,args)
     elif isinstance(expr, Rec_Proc):
-        new_senv = extend_senv_rec(expr.var,static_env)
+        new_senv = extend_senv_vars(expr.var,static_env)
         translate = lambda params,body: translation_of(Proc_Exp(params,body),new_senv)
         exps = tuple(translate(*args) for args in zip(expr.params,expr.body))
         return Nameless_Rec_Exp(exps,translation_of(expr.expr,new_senv))
@@ -98,8 +98,6 @@ def value_of(expr, nameless_env):
     if isinstance(expr, Const_Exp):
         return expr.val
     elif isinstance(expr, Nameless_Var_Exp):
-        return apply_nameless_env(nameless_env, expr.id)
-    elif isinstance(expr, Nameless_Rec_Var_Exp):
         return apply_nameless_env(nameless_env, expr.id)
     elif isinstance(expr,Nameless_Rec_Exp):
         vals = tuple(value_of(exp,nameless_env) for exp in expr.exps)
