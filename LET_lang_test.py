@@ -595,7 +595,7 @@ def test_inference():
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
 
-def main(value_of_prog,recur=True):
+def test_all(value_of_prog,recur=True):
     test_env()
     test_diff_exp(value_of_prog)
     test_if(value_of_prog)
@@ -620,26 +620,26 @@ def main(value_of_prog,recur=True):
 if __name__ == '__main__':
     print('LET')
     from LET import value_of_prog
-    main(value_of_prog)
+    test_all(value_of_prog)
     from NAMELESS_LET import value_of_prog  # except  recursion
     print('NAMELESS_LET')
-    main(value_of_prog,recur=False)
+    test_all(value_of_prog,recur=True)
     from EXPLICIT_REFS import value_of_prog # all test
     print('EXPLICIT_REFS')
-    main(value_of_prog)
+    test_all(value_of_prog)
     test_sequence(value_of_prog)
     from IMPLICIT_REFS import value_of_prog # all test
     print('IMPLICIT_REFS')
-    main(value_of_prog)
+    test_all(value_of_prog)
     test_sequence(value_of_prog)
     test_swap(value_of_prog)
     test_laziness(value_of_prog)
     from LET_cc import value_of_prog 
     print('LET_cc')
-    main(value_of_prog)
+    test_all(value_of_prog)
     from LET_cc_imperative import value_of_prog 
     print('LET_cc_imperative')
-    main(value_of_prog)
+    test_all(value_of_prog)
     print('test CHECKED.py')
     test_checked()
     print('end of test')

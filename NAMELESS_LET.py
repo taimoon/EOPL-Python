@@ -21,18 +21,16 @@ def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
 def apply_proc(proc:Proc_Val|Primitve_Implementation,args):
     if isinstance(proc,Primitve_Implementation):
         return proc.op(*args)
-    new_env = proc.env
+    env = proc.env
     for arg in args:
-        new_env = extend_nameless_env(arg,new_env)
-    return value_of(proc.body, new_env)
+        env = extend_nameless_env(arg,env)
+    return value_of(proc.body, env)
 
 def translation_of(expr,static_env):
     if isinstance(expr, Const_Exp):
         return expr
     elif isinstance(expr, Var_Exp):
-        return Nameless_Var_Exp(apply_senv(static_env, expr.var))
-    elif isinstance(expr, Primitive_Exp):
-            return translation_of(App_Exp(Var_Exp(expr.op),expr.exps),static_env)
+        return apply_senv(static_env, expr.var)
     elif isinstance(expr, Diff_Exp):
         return Diff_Exp(translation_of(expr.left,static_env),translation_of(expr.right,static_env))
     elif isinstance(expr, Zero_Test_Exp):
@@ -44,9 +42,7 @@ def translation_of(expr,static_env):
             translation_of(expr.alter,static_env)
         )   
     elif isinstance(expr, Proc_Exp):
-        new_senv = static_env
-        for param in expr.params:
-            new_senv = extend_senv(param,new_senv)
+        new_senv = extend_senv_vars(expr.params,static_env)
         return Nameless_Proc_Exp(translation_of(expr.body,new_senv))
     elif isinstance(expr, App_Exp):
         proc = translation_of(expr.operator,static_env)
@@ -58,7 +54,12 @@ def translation_of(expr,static_env):
             args = tuple(args)
         return App_Exp(proc,args)
     elif isinstance(expr, Rec_Proc):
-        raise NotImplemented
+        new_senv = extend_senv_rec(expr.var,static_env)
+        translate = lambda params,body: translation_of(Proc_Exp(params,body),new_senv)
+        exps = tuple(translate(*args) for args in zip(expr.params,expr.body))
+        return Nameless_Rec_Exp(exps,translation_of(expr.expr,new_senv))
+    elif isinstance(expr, Primitive_Exp):
+        return translation_of(App_Exp(Var_Exp(expr.op),expr.exps),static_env)
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
     elif isinstance(expr,Pair_Exp):
@@ -66,10 +67,7 @@ def translation_of(expr,static_env):
     elif isinstance(expr,Let_Exp):
         # derived form
         # return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
-        new_senv = static_env
-        exps = ()
-        for var in expr.vars: 
-            new_senv = extend_senv(var,new_senv)
+        new_senv = extend_senv_vars(expr.vars,static_env)
         exps = tuple(translation_of(exp,static_env) for exp in expr.exps)
         return Nameless_Let_Exp(exps,translation_of(expr.body,new_senv))
     elif isinstance(expr,Let_Star_Exp):
@@ -77,16 +75,15 @@ def translation_of(expr,static_env):
             if vars == ():
                 return expr.body
             else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+                return Let_Exp((vars[0],),(exprs[0],),expand(vars[1:],exprs[1:]))
         return translation_of(expand(expr.vars,expr.exps),static_env)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause]):
             if clauses[1:] == ():
-                if expr.otherwise is not None:
-                    return Branch(clauses[0].pred,clauses[0].conseq,expr.otherwise)
-                else:
-                    false_val = Zero_Test_Exp(Const_Exp(1))
-                    return Branch(clauses[0].pred,clauses[0].conseq,false_val)
+                otherwise = expr.otherwise
+                if otherwise is None:
+                    otherwise = Zero_Test_Exp(Const_Exp(1))
+                return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return translation_of(expand(expr.clauses),static_env)
@@ -95,13 +92,23 @@ def translation_of(expr,static_env):
                                       (Unpack_Exp(None,expr.list_expr,None),)),
                               static_env)
     else:
-        raise Exception("Uknown LET expression type", expr)
+        raise Exception("Uknown NAMELESS-LET TRANSLATION expression type", expr)
 
 def value_of(expr, nameless_env):
     if isinstance(expr, Const_Exp):
         return expr.val
     elif isinstance(expr, Nameless_Var_Exp):
         return apply_nameless_env(nameless_env, expr.id)
+    elif isinstance(expr, Nameless_Rec_Var_Exp):
+        return apply_nameless_env(nameless_env, expr.id)
+    elif isinstance(expr,Nameless_Rec_Exp):
+        vals = tuple(value_of(exp,nameless_env) for exp in expr.exps)
+        new_env = nameless_env
+        for val in vals: 
+            new_env = extend_nameless_env(val,new_env)
+        for val in vals: 
+            val.env = new_env
+        return value_of(expr.body,new_env)
     elif isinstance(expr, Primitive_Exp):
         args = map(lambda exp: value_of(exp, nameless_env), expr.exps)
         return expr.op(*args)
@@ -117,6 +124,7 @@ def value_of(expr, nameless_env):
     elif isinstance(expr, Nameless_Proc_Exp):
         return Proc_Val(None,expr.body,nameless_env)
     elif isinstance(expr,Nameless_Let_Exp):
+        'deprecated as let expression can be derived'
         new_env = nameless_env
         for exp in expr.exps:
             new_env = extend_nameless_env(value_of(exp,nameless_env),new_env)
@@ -129,4 +137,4 @@ def value_of(expr, nameless_env):
             args = map(lambda o : value_of(o, nameless_env), expr.operand)
         return apply_proc(proc,args)
     else:
-        raise Exception("Uknown LET expression type", expr)
+        raise Exception("Uknown NAMELESS-LET expression type", expr)

@@ -228,7 +228,18 @@ class Nameless_Proc_Exp:
     body:typing.Any
 
 @dataclass
+class Nameless_Rec_Var_Exp:
+    'nameless LET data structure'
+    id:int
+
+@dataclass
 class Nameless_Let_Exp:
+    'nameless LET data structure'
+    exps:tuple[typing.Any]
+    body:typing.Any
+
+@dataclass
+class Nameless_Rec_Exp:
     'nameless LET data structure'
     exps:tuple[typing.Any]
     body:typing.Any
