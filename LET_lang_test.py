@@ -407,21 +407,20 @@ def test_sequence(value_of_prog):
     
     prog = '''\
     let x = newref(0)
-    in letrec even(dummy)
-                = if zero?(deref(x))
+    in letrec 
+        even() = if zero?(deref(x))
                 then 1
                 else begin
-                setref(x, -(deref(x),1));
-                (odd 888)
-                end
-            odd(dummy)
-                = if zero?(deref(x))
+                    setref(x, -(deref(x),1));
+                    (odd)
+                    end
+        odd() = if zero?(deref(x))
                 then 0
                 else begin
-                setref(x, -(deref(x),1));
-                (even 888)
-                end
-    in begin setref(x,13); (odd 888) end
+                    setref(x, -(deref(x),1));
+                    (even)
+                    end
+    in begin setref(x,13); (odd) end
     '''
     assert(value_of_prog(prog) == 1)
 
@@ -618,17 +617,17 @@ def test_all(value_of_prog,recur=True):
     print('pass all test')
 
 if __name__ == '__main__':
-    print('LET')
     from LET import value_of_prog
+    print('LET')
     test_all(value_of_prog)
-    from NAMELESS_LET import value_of_prog  # except  recursion
+    from NAMELESS_LET import value_of_prog
     print('NAMELESS_LET')
     test_all(value_of_prog,recur=True)
-    from EXPLICIT_REFS import value_of_prog # all test
+    from EXPLICIT_REFS import value_of_prog
     print('EXPLICIT_REFS')
     test_all(value_of_prog)
     test_sequence(value_of_prog)
-    from IMPLICIT_REFS import value_of_prog # all test
+    from IMPLICIT_REFS import value_of_prog
     print('IMPLICIT_REFS')
     test_all(value_of_prog)
     test_sequence(value_of_prog)

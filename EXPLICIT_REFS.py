@@ -1,4 +1,4 @@
-from LET_parser import *
+from LET_parser import parser
 from LET_environment import *
 from memory import *
 

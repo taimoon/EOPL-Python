@@ -1,8 +1,6 @@
-from LET_parser import *
+from LET_parser import parser
 from LET_environment import *
 from LET_ast_node import *
-# TODO : handling letrec
-# TODO : recursion
 
 def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
     # workaround
