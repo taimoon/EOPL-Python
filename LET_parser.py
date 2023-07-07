@@ -171,7 +171,6 @@ def p_list_opt(p):
         case (x,):
             p[0] = x
 
-
 def p_branch(p):
     'expr : IF expr THEN expr ELSE expr'
     p[0] =  Branch(p[2],p[4],p[6])
@@ -214,20 +213,28 @@ def p_sequence(p):
 
 def p_let_exp(p):
     """
-        expr : LET let_pairs IN expr
-            | LETMUT let_pairs IN expr
-            | LET_STAR let_pairs IN expr
+        expr : LET_HEADER IN expr
     """
-    let_token,pairs,_,expr = p[1:]
+    p[0]:Let_Exp|Let_Star_Exp|Letmutable_Exp = p[1]
+    p[0].body = p[3]
+
+def p_let_header(p):
+    # workaround with let-blocks in modules
+    """
+    LET_HEADER : LET let_pairs
+            | LETMUT let_pairs
+            | LET_STAR let_pairs
+    """
+    let_token,pairs = p[1:]
     let_token = reserved[let_token]
     vars = tuple(map(lambda t:t[0], pairs))
     vals = tuple(map(lambda t:t[1], pairs))
     if let_token == 'LET':
-        p[0] =  Let_Exp(vars,vals,expr)
+        p[0] =  Let_Exp(vars,vals,None)
     elif let_token == 'LET_STAR':
-        p[0] =  Let_Star_Exp(vars,vals,expr)
+        p[0] =  Let_Star_Exp(vars,vals,None)
     else:
-        p[0] =  Letmutable_Exp(vars,vals,expr)
+        p[0] =  Letmutable_Exp(vars,vals,None)
 
 def p_let_pairs(p):
     '''
@@ -244,7 +251,13 @@ def p_let_pairs(p):
             p[0] = (var,expr)
 
 def p_letrec_exp(p):
-    "expr : LETREC letrec_pairs IN expr"
+    "expr : LETREC_HEADER IN expr"
+    p[0]:Rec_Proc = p[1]
+    p[0].expr = p[3]
+
+def p_letrec_header(p):
+    # workaround with let-blocks in modules
+    "LETREC_HEADER : LETREC letrec_pairs"
     let_pairs = p[2]
     if len(let_pairs[0]) > 3:
         res_types = tuple(map(lambda t: t[0], let_pairs))
@@ -252,15 +265,13 @@ def p_letrec_exp(p):
         paramss = tuple(map(lambda t: tuple(p[0] for p in t[2]), let_pairs))
         arg_types = tuple(map(lambda t: tuple(p[1] for p in t[2]), let_pairs))
         exps = tuple(map(lambda t: t[3], let_pairs))
-        expr = p[4]
-        p[0] = Rec_Proc(vars,paramss,exps,expr,
+        p[0] = Rec_Proc(vars,paramss,exps,None,
                         res_types=res_types,arg_types=arg_types)
     else:
         vars = tuple(map(lambda t: t[0], let_pairs))
         paramss = tuple(map(lambda t: t[1], let_pairs))
         exps = tuple(map(lambda t: t[2], let_pairs))
-        expr = p[4]
-        p[0] = Rec_Proc(vars,paramss,exps,expr)
+        p[0] = Rec_Proc(vars,paramss,exps,None)
 
 def p_letrec_pairs(p):
     '''
@@ -370,7 +381,6 @@ def p_multi_arg_type(p):
         case _:
             raise Exception(tuple(p[1:]))
             
-
 # Modules
 def p_modules(p):
     '''modules : module
@@ -382,18 +392,21 @@ def p_modules(p):
 def p_module_def(p):
     '''
     module :  MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
+        | MODULE ID INTERFACE '[' decl_opt ']' BODY LET_HEADER IN '[' module_body_opt ']'
+        | MODULE ID INTERFACE '[' decl_opt ']' BODY LETREC_HEADER IN '[' module_body_opt ']'
         | MODULE ID INTERFACE '[' decl_opt ']' BODY modules '[' module_body_opt ']'
     '''
     modules = ()
     match tuple(p[2:]):
         case (name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
             p[0] = Module_Def(name,declarations,modules,body)
+        case (name,interface_kw,'[',declarations,']',body_kw,let_exp,'in','[',body,']'):
+            raise NotImplemented
         case (name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
             p[0] = Module_Def(name,declarations,modules,body)
         case _:
             raise NotImplemented
-    # module_kw,name,interface_kw,_,declarations,_,body_kw,_,body,_ = p[1:]
-    # p[0] = Module_Def(name,declarations,body)
+
     
 def p_decl_opt(p):
     '''decl_opt : 
@@ -423,7 +436,6 @@ def p_module_body(p):
     if len(p) > 2:
         p[0] += p[2]
     
-
 def p_module_body_def(p):
     '''def : ID '=' expr'''
     p[0] = Var_Def(p[1],p[3])

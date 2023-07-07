@@ -1,15 +1,9 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
-from memory import *
+# from memory import *
 
 class Repeated_Module_Error(Exception): pass
-
-def extend_env_from_pairs(vars,vals,env):
-    "no recursive; order shouldn't be mattered"
-    for var,val in zip(vars,vals):
-        env = extend_env(var,val,env)
-    return env
 
 def check_equal_type(t1,t2,exp):
     if t1 != t2:
@@ -115,16 +109,12 @@ def type_of(expr, env):
         t = type_of(expr.expr,env)
         check_equal_type(t,Int_Type(),expr.expr)
         return No_Type()
-        # return deref(value_of(expr.expr,env))
     elif isinstance(expr,SetRef):
         ref_t = type_of(expr.loc,env)
         check_equal_type(ref_t,Int_Type(),expr.loc)
-        # val_t = type_of(expr.expr,env)
         return Void_Type()
-        # return setref(ref,val)
     # Derived Form
     elif isinstance(expr,Let_Exp):
-        # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form
         types = tuple(type_of(exp,env) for exp in expr.exps)
         return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env)
