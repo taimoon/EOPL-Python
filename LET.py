@@ -19,6 +19,14 @@ def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env):
 def apply_primitive(prim:Primitive_Exp,args):
     return prim.op(*args)
 
+def expand_let_star(expr:Let_Star_Exp):
+    def recur(vars,exps):
+        if vars == ():
+            return expr.body
+        else:
+            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
+    return recur(expr.vars,expr.exps)
+
 def value_of(expr, env):    
     if isinstance(expr, Const_Exp):
         return expr.val
@@ -61,12 +69,7 @@ def value_of(expr, env):
         # as derived form
         return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
     elif isinstance(expr,Let_Star_Exp):
-        def expand(vars,exprs):
-            if vars == ():
-                return expr.body
-            else:
-                return Let_Exp((vars[0],),(exprs[0],),expand(vars[1:],exprs[1:]))
-        return value_of(expand(expr.vars,expr.exps),env)
+        return value_of(expand_let_star(expr),env)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause],otherwise=expr.otherwise):
             if clauses[1:] == ():
@@ -92,9 +95,29 @@ def add_modules_to_env(modules:tuple[Module_Def],env):
     'accumulate module bindings to env'
     for module in modules:
         local_env = add_modules_to_env(module.modules,env) # TODO : check correctness
+        local_env = let_exp_to_env(module.let_block,local_env)
         bindings = definitions_to_env(module.body,local_env)
         env = extend_env_with_module(module.name,bindings,env)
     return env
+
+def let_exp_to_env(exp:Let_Exp|Let_Star_Exp|Rec_Proc,env:Environment):
+    if isinstance(exp,Let_Star_Exp):
+        return let_exp_to_env(expand_let_star(exp),env)
+    elif isinstance(exp,Let_Exp):
+        vals = tuple(value_of(exp,env) for exp in exp.exps)
+        new_env = extend_env_from_pairs(exp.vars,vals,env)
+        if exp.body is None:
+            return new_env
+        else:
+            return let_exp_to_env(exp.body,new_env)      
+    elif isinstance(exp,Rec_Proc):
+        new_env = extend_env_rec_multi(exp.var,exp.params,exp.body,env)
+        if exp.expr is None:
+            return new_env
+        else:
+            return let_exp_to_env(exp.expr,new_env)  
+    else:
+        return env
 
 def definitions_to_env(defs:tuple[Var_Def],env:Environment) -> Environment:
     # must be recursive

@@ -335,6 +335,7 @@ class Module_Def:
     name:str
     interface: tuple[Var_Decl]
     modules:tuple
+    let_block:Let_Exp|Let_Star_Exp|Letmutable_Exp|Rec_Proc
     body: tuple[Var_Def]
     
 @dataclass

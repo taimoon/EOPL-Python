@@ -77,5 +77,36 @@ def test_modules():
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 32)
     
+    prog = '''
+    module m1
+    interface
+        [x : int]
+    body
+        let 
+            x = 2
+        in  [y = x]
+    m1.y
+    '''
+    assert(value_of_prog(prog) == 2)
+    
+    prog = '''
+    module odd_even
+    interface
+        [even : (int -> bool)
+         odd : (int -> bool)]
+    body
+        letrec
+            int local_even(x:int) = if zero?(x) then 1 else (local_odd -(x,1))
+            int local_odd(x:int) = if zero?(x) then 0 else (local_even -(x,1))
+        in [
+        even = proc(x:int) equal?((local_even x), 1)
+        odd = proc(x:int) zero?((local_odd x))
+        ]
+    (odd_even.even 6)
+    '''
+    assert(type_of_prog(prog) == ast.Bool_Type())
+    assert(value_of_prog(prog) is True)
+    
+    
 if __name__ == '__main__':
     test_modules()

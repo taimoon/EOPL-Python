@@ -1,4 +1,3 @@
-# import ply.yacc as yacc
 import ply.yacc as yacc
 # Get the token map from the lexer.  This is required.
 from LET_lexer import tokens, reserved
@@ -397,17 +396,17 @@ def p_module_def(p):
         | MODULE ID INTERFACE '[' decl_opt ']' BODY modules '[' module_body_opt ']'
     '''
     modules = ()
+    let_exp = None
     match tuple(p[2:]):
         case (name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
-            p[0] = Module_Def(name,declarations,modules,body)
+            p[0] = Module_Def(name,declarations,modules,let_exp,body)
         case (name,interface_kw,'[',declarations,']',body_kw,let_exp,'in','[',body,']'):
-            raise NotImplemented
+            p[0] = Module_Def(name,declarations,modules,let_exp,body)
         case (name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
-            p[0] = Module_Def(name,declarations,modules,body)
+            p[0] = Module_Def(name,declarations,modules,let_exp,body)
         case _:
             raise NotImplemented
 
-    
 def p_decl_opt(p):
     '''decl_opt : 
         | declarations'''

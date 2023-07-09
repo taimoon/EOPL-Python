@@ -43,7 +43,7 @@ class Environment:
         raise Exception("Unbound variable",src_var,f"env - {self.env}")
     
     def apply_senv(self,src_var):
-        for lex_addr,(var,val) in enumerate(self.env):
+        for lex_addr,(var,_) in enumerate(self.env):
             if var != src_var: continue
             return lex_addr
         raise Exception("Unbound variable",src_var,f"env - {self.env}")

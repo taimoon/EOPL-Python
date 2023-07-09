@@ -16,6 +16,15 @@ def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
     else:
         return type_of(prog, env)
 
+def expand_let_star(expr:Let_Star_Exp):
+    def recur(vars,exps):
+        if vars == ():
+            return expr.body
+        else:
+            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
+    return recur(expr.vars,expr.exps)
+
+
 def type_of(expr, env):    
     if isinstance(expr, Const_Exp):
         if isinstance(expr.val,NULL):
@@ -161,6 +170,7 @@ def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
     
     for module in modules:
         local_tenv = add_modules_to_tenv(module.modules,tenv) # TODO : check correctness
+        local_tenv = let_exp_to_tenv(module.let_block,local_tenv)
         interface = defs_to_decls(module.body,local_tenv)
         if not subset_interface(interface,module.interface):
             raise Exception(f"Does not satisfy interface {module.interface} {interface}")
@@ -178,6 +188,32 @@ def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
         tenv = extend_env_with_module(module.name,module_tenv,tenv)
     
     return tenv
+
+def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
+    if isinstance(exp,Let_Star_Exp):
+        return let_exp_to_tenv(expand_let_star(exp),tenv)
+    elif isinstance(exp,Let_Exp):
+        vals = tuple(type_of(exp,tenv) for exp in exp.exps)
+        new_env = extend_env_from_pairs(exp.vars,vals,tenv)
+        if exp.body is None:
+            return new_env
+        else:
+            return let_exp_to_tenv(exp.body,new_env)      
+    elif isinstance(exp,Rec_Proc):
+        ext_env = tenv
+        for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
+            ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
+        
+        for param,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
+            body_t = type_of(body,extend_env_from_pairs(param,arg_t,ext_env))
+            check_equal_type(body_t,res_t,body)
+        
+        if exp.expr is None:
+            return ext_env
+        else:
+            return let_exp_to_tenv(exp.expr,ext_env)  
+    else:
+        return tenv
 
 def decls_to_tenv(decls:tuple[Var_Decl]):
     if decls == tuple():
@@ -219,3 +255,4 @@ def subset_interface(actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
             return recur(decls_1[1:],decls_2[1:])
         
     return recur(actual,expected)
+
