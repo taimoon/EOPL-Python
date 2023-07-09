@@ -507,8 +507,12 @@ def test_checked():
     assert(str(res) == ans)
     assert(res == parse(ans))
     
-    prog = '''let xs = newpair(newpair(1,zero?(0)),newpair(3,emptylist))
-    in newpair(car(xs),cdr(cdr(xs)))'''
+    prog = '''
+    let* z = newpair(3,emptylist)
+        y = newpair(1,zero?(0))
+        xs = newpair(y,z)
+    in newpair(car(xs),cdr(cdr(xs)))
+    '''
     res = type_of_prog(prog)
     ans = 'pairof pairof int * bool * ?'
     assert(str(res) == ans)

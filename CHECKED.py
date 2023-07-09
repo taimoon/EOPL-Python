@@ -1,7 +1,6 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
-# from memory import *
 
 class Repeated_Module_Error(Exception): pass
 
@@ -16,25 +15,25 @@ def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
     else:
         return type_of(prog, env)
 
-def expand_let_star(expr:Let_Star_Exp):
+def expand_let_star(exp:Let_Star_Exp):
     def recur(vars,exps):
         if vars == ():
-            return expr.body
+            return exp.body
         else:
             return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
-    return recur(expr.vars,expr.exps)
+    return recur(exp.vars,exp.exps)
 
 
-def type_of(expr, env):    
-    if isinstance(expr, Const_Exp):
-        if isinstance(expr.val,NULL):
-            '''
-            workaround
-            the No_Type NULL only acceptable in newpair
-            but Typed NULL only acceptable in cons
-            '''
-            t = expr.val.t
-            return t if isinstance(t,No_Type) else List_Type(t)
+def type_of(expr, env):
+    if isinstance(expr, Const_Exp) and isinstance(expr.val,NULL):
+        '''
+        workaround
+        the No_Type NULL only acceptable in newpair
+        but Typed NULL only acceptable in cons
+        '''
+        t = expr.val.t
+        return t if isinstance(t,No_Type) else List_Type(t)
+    elif isinstance(expr, Const_Exp):
         return Int_Type()
     elif isinstance(expr, Var_Exp):
         return apply_env(env, expr.var)  
@@ -111,9 +110,7 @@ def type_of(expr, env):
             t = type_of(exp,env)
         return Void_Type() if t is None else t
     elif isinstance(expr,NewRef):
-        # t = type_of(expr.expr,env)
         return Void_Type()
-        # return newref(t)
     elif isinstance(expr,DeRef):
         t = type_of(expr.expr,env)
         check_equal_type(t,Int_Type(),expr.expr)
@@ -124,16 +121,10 @@ def type_of(expr, env):
         return Void_Type()
     # Derived Form
     elif isinstance(expr,Let_Exp):
-        # as derived form
         types = tuple(type_of(exp,env) for exp in expr.exps)
-        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env)
+        return type_of(App_Exp(Proc_Exp(expr.vars,expr.body,types),expr.exps),env)
     elif isinstance(expr,Let_Star_Exp):
-        def expand(vars,exprs):
-            if vars == ():
-                return expr.body
-            else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
-        return type_of(expand(expr.vars,expr.exps),env)
+        return type_of(expand_let_star(expr),env)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause]):
             if clauses[1:] == ():
@@ -183,7 +174,6 @@ def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
             raise Repeated_Module_Error
         except Exception as e:
             module_tenv = decls_to_tenv(interface)
-            
         
         tenv = extend_env_with_module(module.name,module_tenv,tenv)
     
