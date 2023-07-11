@@ -5,9 +5,9 @@ from LET_ast_node import *
 
 def p_prog(p):
     '''
-    prog : modules expr
+    prog : type
+        | modules expr
         | expr
-        | type
     '''
     match tuple(p[1:]):
         case (module,expr):
@@ -17,10 +17,11 @@ def p_prog(p):
     
 # Expression
 def p_application(p):
-    """ expr : '(' expr_list ')'
-        expr_list : expr
-                 | expr expr_list
-    """
+    '''
+    expr : '(' expr_list ')'
+    expr_list : expr
+            | expr expr_list
+    '''
     match tuple(p[1:]):
         case ('(',expr_list,')'):
             p[0] = App_Exp(expr_list[0],expr_list[1:])
@@ -30,7 +31,7 @@ def p_application(p):
             p[0] = x
 
 def p_proc(p):
-    """expr : PROC '(' params_opt ')' expr"""
+    '''expr : PROC '(' params_opt ')' expr'''
     match tuple(p[1:]):
         case (_,'(',(),')',expr):
             p[0] = Proc_Exp(tuple(),expr,(Void_Type(),))
@@ -73,9 +74,18 @@ def p_number(p):
     "expr : NUMBER"
     p[0] = Const_Exp(p[1])
 
-def p_var(p):
-    "expr : ID"
-    p[0] =  Var_Exp(p[1])
+def p_var_exp(p):
+    '''expr : FROM ID TAKE ID
+        | ID '.' ID
+        | ID
+    '''
+    match tuple(p[1:]):
+        case ('from',name,'take',var):
+            p[0] = Qualified_Var_Exp(name,var)
+        case (name,'.',var):
+            p[0] = Qualified_Var_Exp(name,var)
+        case (name,):
+            p[0] = Var_Exp(name)
 
 def p_null(p):
     # TODO : ambiguous grammar
@@ -99,7 +109,7 @@ def p_neg_exp(p):
         case (op, expr):
             p[0] = Diff_Exp(Const_Exp(0), expr)
 
-def p_type_pair_exp(p):
+def p_pair_exp(p):
     '''
     expr : NEWPAIR '(' expr ',' expr ')'
         | UNPAIR ID ID '=' expr IN expr
@@ -175,23 +185,21 @@ def p_branch(p):
     p[0] =  Branch(p[2],p[4],p[6])
 
 def p_unpack_exp(p):
-    """expr : UNPACK vars '=' expr IN expr
+    '''
+        expr : UNPACK vars '=' expr IN expr
             | UNPACK '(' expr ')'
-            """
+        vars : ID
+            | ID vars
+    '''
     match tuple(p[1:]):
         case (UNPACK,vars,'=',list_expr,_,expr):
             p[0] =  Unpack_Exp(vars,list_expr,expr)
         case (UNPACK,'(',expr,')'):
             p[0] = Unpack_Exp(None,expr,None)
-
-def p_unpack_vars(p):
-    '''
-        vars : ID
-            | ID vars
-    '''
-    p[0] = (p[1],)
-    if len(p) > 2:
-        p[0] += p[2]
+        case (name,):
+            p[0] = (name,)
+        case (name,names):
+            p[0] = (name,) + names
 
 def p_sequence(p):
     '''
@@ -299,8 +307,7 @@ def p_cond_exp(p):
     cond_clause : expr RIGHTARROW expr
     '''
     match tuple(p[1:]):
-        case ('cond',(*cond_clauses,else_clause),'end') \
-            if not isinstance(else_clause, Clause):
+        case ('cond',(*cond_clauses,else_clause),'end') if not isinstance(else_clause, Clause):
             p[0] = Conditional(tuple(cond_clauses),else_clause)
         case ('cond',cond_clauses,'end'):
             p[0] = Conditional(cond_clauses,None)
@@ -340,15 +347,20 @@ def p_memory_exp(p):
 
 # Type
 def p_type(p):
-    """type : '?'
+    '''
+    type : '?'
         | VOID
         | INT
         | BOOL
         | PAIROF type '*' type
         | LISTOF type
         | '(' multi_arg_type TYPEARROW type ')'
-    """
-    p[1] = reserved[p[1]] if p[1] in reserved.keys() else p[1]
+    
+    multi_arg_type : type
+        | type '*' multi_arg_type
+    '''
+    from typing import Hashable
+    p[1] = reserved[p[1]] if isinstance(p[1],Hashable) and p[1] in reserved.keys() else p[1]
     match tuple(p)[1:]:
         case ('?',):
             p[0] = No_Type()
@@ -364,90 +376,102 @@ def p_type(p):
             p[0] = List_Type(t)
         case ('(',arg_type,TYPEARROW,result_type,')'):
             p[0] = Proc_Type(arg_type,result_type)
-        case _:
-            raise Exception(str(tuple(p[1:])))
-           
-def p_multi_arg_type(p):
-    '''
-    multi_arg_type : type
-        | type '*' multi_arg_type
-    '''
-    match tuple(p[1:]):
         case(type,'*',types):
             p[0] = (type,) + types
         case (type,):
             p[0] = (type,)
         case _:
-            raise Exception(tuple(p[1:]))
-            
-# Modules
-def p_modules(p):
-    '''modules : module
-        | module modules'''
-    p[0] = (p[1],)
-    if len(p) > 2:
-        p[0] += p[2]
+            raise Exception(str(tuple(p[1:])))
 
+# Modules
 def p_module_def(p):
     '''
     module :  MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
         | MODULE ID INTERFACE '[' decl_opt ']' BODY LET_HEADER IN '[' module_body_opt ']'
         | MODULE ID INTERFACE '[' decl_opt ']' BODY LETREC_HEADER IN '[' module_body_opt ']'
         | MODULE ID INTERFACE '[' decl_opt ']' BODY modules '[' module_body_opt ']'
+    
+    modules : module
+        | module modules
     '''
     modules = ()
     let_exp = None
-    match tuple(p[2:]):
-        case (name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
+    match tuple(p[1:]):
+        case (kw,name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
-        case (name,interface_kw,'[',declarations,']',body_kw,let_exp,'in','[',body,']'):
+        case (kw,name,interface_kw,'[',declarations,']',body_kw,let_exp,'in','[',body,']'):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
-        case (name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
+        case (kw,name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
+        case (module,):
+            p[0] = (module,)
+        case (module,modules):
+            p[0] = (module,) + modules
         case _:
             raise NotImplemented
 
-def p_decl_opt(p):
-    '''decl_opt : 
-        | declarations'''
-    p[0] = p[1] if p[1] is not None else tuple()
-
 def p_declarations(p):
-    '''declarations : decl
-        | decl declarations'''
-    p[0] = (p[1],)
-    if len(p) > 2:
-        p[0] += p[2]
-
-def p_decl(p):
-    '''decl : ID ':' type'''
-    p[0] = Var_Decl(p[1],p[3])
-
-def p_module_body_opt(p):
-    '''module_body_opt :
-        | module_body'''
-    p[0] = p[1] if p[1] is not None else tuple()
-
-def p_module_body(p):
-    '''module_body : def
-        | def module_body'''
-    p[0] = (p[1],)
-    if len(p) > 2:
-        p[0] += p[2]
+    '''
+    decl_opt : 
+        | declarations
     
-def p_module_body_def(p):
-    '''def : ID '=' expr'''
-    p[0] = Var_Def(p[1],p[3])
-    
-def p_qualified_expr(p):
-    '''expr : FROM ID TAKE ID
-        | ID '.' ID
+    declarations : decl
+        | decl declarations
     '''
     match tuple(p[1:]):
-        case ('from',name,'take',var):
-            p[0] = Qualified_Var_Exp(name,var)
-        case (name,'.',var):
-            p[0] = Qualified_Var_Exp(name,var)
+        case ():
+            p[0] = tuple()
+        case (declarations,) if isinstance(declarations,tuple):
+            p[0] = declarations
+        case (decl,declarations):
+            p[0] = (decl,) + declarations
+        case (decl,):
+            p[0] = (decl,)
+
+def p_decl(p):
+    '''
+    decl : ID ':' type
+        | OPAQUE ID
+        | TRANSPARENT ID '=' type
+    '''
+    match tuple(p[1:]):
+        case (var,':',t):
+            p[0] = Var_Decl(var,t)
+        case ('opaque',var):
+            p[0] = Opaque_Type_Decl(var)
+        case ('transparent',var,'=',t):
+            p[0] = Transparent_Type_Decl(var,t)
+
+def p_module_body(p):
+    '''
+    module_body_opt :
+        | module_body
+    module_body : def
+        | def module_body
+    '''
+    match tuple(p[1:]):
+        case ():
+            p[0] = tuple()
+        case (definitons,) if isinstance(definitons,tuple):
+            p[0] = definitons
+        case (definition,definitons):
+            p[0] = (definition,) + definitons
+        case (definition,):
+            p[0] = (definition,)
+    
+def p_module_body_def(p):
+    '''
+    def : ID '=' expr
+        | TYPE ID '=' type
+    '''
+    match tuple(p[1:]):
+        case (var,'=',exp):
+            p[0] = Var_Def(var,exp)
+        case (type_kw,var,'=',t):
+            p[0] = Type_Def(var,t)
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplemented
 
 # Error rule for syntax errors
 def p_error(p):

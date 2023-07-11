@@ -55,6 +55,9 @@ reserved = {
    'body': 'BODY',
    'from': 'FROM',
    'take' : 'TAKE',
+   'opaque' : 'OPAQUE',
+   'transparent' : 'TRANSPARENT',
+   'type': 'TYPE',
 }
 
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
@@ -65,6 +68,12 @@ literals = r'-+*/,=();{}:?[].'
 # Specification of tokens
 t_RIGHTARROW = r'\=>'
 t_TYPEARROW = r'\->'
+
+
+precedence = (
+    ('left', '"."'),
+    ('left', 'FROM'),
+)
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9\?\*]*'

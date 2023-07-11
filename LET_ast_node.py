@@ -318,6 +318,15 @@ class List_Type:
     t:typing.Any
     def __str__(self) -> str:
         return f'listof {self.t}'
+    
+@dataclass
+class Qualified_Type:
+    module_name:str
+    type_name:str
+
+@dataclass
+class Named_Type:
+    name:str
 
 # module
 @dataclass
@@ -326,9 +335,23 @@ class Var_Def:
     expr:typing.Any
 
 @dataclass
+class Type_Def:
+    name:str
+    t:None
+
+@dataclass
 class Var_Decl:
     name:str
     type:None
+
+@dataclass
+class Opaque_Type_Decl:
+    name:str
+
+@dataclass
+class Transparent_Type_Decl:
+    name:str
+    t:None
 
 @dataclass
 class Module_Def:

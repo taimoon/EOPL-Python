@@ -2,8 +2,6 @@ def test_modules():
     from LET import value_of_prog
     from CHECKED import type_of_prog
     import LET_ast_node as ast
-    from LET_parser import parser
-    parse = parser.parse
     prog = '''\
     module m1
         interface [
@@ -106,7 +104,31 @@ def test_modules():
     '''
     assert(type_of_prog(prog) == ast.Bool_Type())
     assert(value_of_prog(prog) is True)
+    print('end of test modules')
     
-    
+def test_typed_modules():
+    from LET import value_of_prog
+    from CHECKED import type_of_prog
+    import LET_ast_node as ast
+    from LET_parser import parser
+    parse = parser.parse
+    prog = '''
+    module m1
+    interface [
+        transparent t = int
+        z:t
+        s : (t -> t)
+        is-z? : (t -> bool)
+    ] body [
+        type t = int
+        z = 33
+        s = proc (x : t) -(x,-1)
+        is-z? = proc (x : t) zero?(-(x,z))
+        ]
+    proc (x : from m1 take t) (from m1 take is-z? -(x,0))
+    '''
+    print(parse(prog))
 if __name__ == '__main__':
     test_modules()
+    # test_typed_modules()
+    
