@@ -446,8 +446,7 @@ def test_laziness(value_of_prog):
 def test_checked():
     from CHECKED import type_of_prog
     from LET import value_of_prog
-    from LET_parser import parser
-    parse = parser.parse
+    from LET_parser import type_parse as parse
     prog = 'proc (x : int) -(x,1)'
     res = type_of_prog(prog)
     ans = '(int -> int)'

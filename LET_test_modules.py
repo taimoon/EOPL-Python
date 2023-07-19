@@ -108,27 +108,122 @@ def test_modules():
     
 def test_typed_modules():
     from LET import value_of_prog
-    from CHECKED import type_of_prog
     import LET_ast_node as ast
+    from CHECKED import type_of_prog
     from LET_parser import parser
     parse = parser.parse
     prog = '''
     module m1
     interface [
         transparent t = int
-        z:t
+        z : t
         s : (t -> t)
-        is-z? : (t -> bool)
+        is_z? : (t -> bool)
     ] body [
         type t = int
         z = 33
         s = proc (x : t) -(x,-1)
-        is-z? = proc (x : t) zero?(-(x,z))
+        is_z? = proc (x : t) zero?(-(x,z))
         ]
-    proc (x : from m1 take t) (from m1 take is-z? -(x,0))
+    proc (x : m1.t) (m1.is_z? -(x,0))
     '''
-    print(parse(prog))
+    ans = parse('type (int -> bool)')
+    assert(type_of_prog(prog) == ans)
+    value_of_prog(prog)
+    
+    prog = '''
+    module m1
+    interface
+    [opaque t
+    z:t
+    s : (t -> t)
+    is_z? : (t -> bool)]
+    body
+    [type t = int
+    z = 33
+    s = proc (x : t) -(x,-1)
+    is_z? = proc (x : t) zero?(-(x,z))]
+    proc (x : m1.t)
+    (m1.is_z? x)
+    '''
+    ans = parse('type (m1.t -> bool)')
+    assert(type_of_prog(prog) == ans)
+    value_of_prog(prog)
+    
+    prog = '''
+    module colors
+    interface
+    [opaque color
+    red : color
+    green : color
+    is_red? : (color -> bool)]
+    body
+    [type color = int
+    red = 0
+    green = 1
+    is_red? = proc (c : color) zero?(c)]
+    newpair(colors.red,newpair(colors.green,colors.is_red?))
+    '''
+    ans = 'type pairof colors.color * pairof colors.color * (colors.color -> bool)'
+    assert(type_of_prog(prog) == parse(ans))
+    
+    prog = '''
+    module ints1
+    interface
+    [opaque t
+    zero : t
+    succ : (t -> t)
+    pred : (t -> t)
+    is_zero : (t -> bool)]
+    body
+    [type t = int
+    zero = 0
+    succ = proc(x : t) -(x,-5)
+    pred = proc(x : t) -(x,5)
+    is_zero = proc (x : t) zero?(x)]
+    let z = from ints1 take zero
+    in let s = from ints1 take succ
+    in let p = from ints1 take pred
+    in let z? = from ints1 take is_zero
+    in letrec int to_int (x : from ints1 take t) =
+    if (z? x)
+    then 0
+    else -((to_int (p x)), -1)
+    in newpair((s (s z)),(to_int (s (s z))))
+    '''
+    assert(type_of_prog(prog) == parse('type pairof ints1.t * int'))
+    assert(value_of_prog(prog) == ast.Pair(10,2))
+    
+    prog = '''
+    module ints2
+    interface
+    [opaque t
+    zero : t
+    succ : (t -> t)
+    pred : (t -> t)
+    is_zero : (t -> bool)]
+    body
+    [type t = int
+    zero = 0
+    succ = proc(x : t) -(x,3)
+    pred = proc(x : t) -(x,-3)
+    is_zero = proc (x : t) zero?(x)]
+    let z = from ints2 take zero
+    in let s = from ints2 take succ
+    in let p = from ints2 take pred
+    in let z? = from ints2 take is_zero
+    in letrec int to_int (x : from ints2 take t)
+    = if (z? x)
+    then 0
+    else -((to_int (p x)), -1)
+    in newpair((to_int (s (s z))),(s (s z)))
+    '''
+    assert(type_of_prog(prog) == parse('type pairof int * ints2.t'))
+    assert(value_of_prog(prog) == ast.Pair(2,-6))
+    
+    print('end of test typed modules')
+    
 if __name__ == '__main__':
     test_modules()
-    # test_typed_modules()
+    test_typed_modules()
     

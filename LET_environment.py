@@ -195,3 +195,9 @@ def lookup_module_name(name,env:Environment):
 
 def lookup_qualified_var(name,var,env:Environment):
     return env.lookup_qualified_var(name,var)
+
+def lookup_type_name(var,tenv:Environment):
+    return tenv.apply(var)
+
+def lookup_qualified_type(name,type_name,tenv:Environment):
+    return lookup_qualified_var(name,type_name,tenv)

@@ -8,12 +8,14 @@ def check_equal_type(t1,t2,exp):
     if t1 != t2:
         raise Exception(f"Type didn't match [{t1}] [{t2}] [{exp}]")
 
+
 def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
     prog = parse(prog)
     if isinstance(prog,Program):
         return type_of(prog.expr,add_modules_to_tenv(prog.modules,env))
     else:
         return type_of(prog, env)
+
 
 def expand_let_star(exp:Let_Star_Exp):
     def recur(vars,exps):
@@ -50,17 +52,15 @@ def type_of(expr, env):
         t2 = type_of(expr.alter,env)
         check_equal_type(t1,t2,expr)
         return t1
-    elif isinstance(expr, Proc_Exp):
-        ext_env = extend_env_from_pairs(expr.params, expr.types, env)
+    elif isinstance(expr, Proc_Exp): # TODO - move expand_types
+        ext_env = extend_env_from_pairs(expr.params, expand_types(expr.types,env), env)
         res_t = type_of(expr.body,ext_env)
-        return Proc_Type(expr.types,
+        return Proc_Type(expand_types(expr.types,env),
                          result_type=res_t)
     elif isinstance(expr, App_Exp):
-        # proc = value_of(expr.operator,env)
         proc_t = type_of(expr.operator,env)
         if not isinstance(proc_t,Proc_Type):
             raise Exception(f"Operator is not a procedure type {proc_t} {expr.operator}")
-        
         arg_types = tuple(map(lambda exp: type_of(exp,env),expr.operand))
         for param_t,arg_t in zip(proc_t.arg_type,arg_types):
             check_equal_type(param_t,arg_t,expr)
@@ -69,10 +69,10 @@ def type_of(expr, env):
     elif isinstance(expr, Rec_Proc):
         ext_env = env
         for var,arg_t,res_t in zip(expr.var,expr.arg_types,expr.res_types):
-            ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
+            ext_env = extend_env(var,expand_type(Proc_Type(arg_t,res_t),env),ext_env)
         
         for param,arg_t,body,res_t in zip(expr.params,expr.arg_types,expr.body,expr.res_types):
-            body_t = type_of(body,extend_env_from_pairs(param,arg_t,ext_env))
+            body_t = type_of(body,extend_env_from_pairs(param,expand_types(arg_t,env),ext_env))
             check_equal_type(body_t,res_t,body)
             
         return type_of(expr.expr,ext_env)
@@ -90,8 +90,8 @@ def type_of(expr, env):
         t = type_of(expr.pair_exp,env)
         if not isinstance(t,Pair_Type):
             raise Exception(f"the expression is not pair for UNPAIR {expr}")
-        env = extend_env(expr.left,t.t0,env)
-        env = extend_env(expr.right,t.t1,env)
+        env = extend_env(expr.left,expand_type(t.t0,env),env)
+        env = extend_env(expr.right,expand_type(t.t1,env),env)
         return type_of(expr.expr,env)
     elif isinstance(expr,List):
         types = tuple(map(lambda exp: type_of(exp,env), expr.exps))
@@ -158,22 +158,21 @@ def type_of(expr, env):
 
 
 def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
-    
     for module in modules:
-        local_tenv = add_modules_to_tenv(module.modules,tenv) # TODO : check correctness
+        local_tenv = add_modules_to_tenv(module.modules,tenv) 
         local_tenv = let_exp_to_tenv(module.let_block,local_tenv)
         interface = defs_to_decls(module.body,local_tenv)
-        if not subset_interface(interface,module.interface):
+        if not decl_subset(interface,module.interface,tenv):
             raise Exception(f"Does not satisfy interface {module.interface} {interface}")
 
         try:
             lookup_module_name(module.name,tenv)
             raise Repeated_Module_Error
         except Repeated_Module_Error:
-            print(f"Repeated module name of '{module.name}' in {tenv}")
-            raise Repeated_Module_Error
+            raise Repeated_Module_Error(f"Repeated module name of '{module.name}' in {tenv}")
         except Exception as e:
-            module_tenv = decls_to_tenv(interface)
+            expected = expand_interface(module.name,module.interface,tenv)
+            module_tenv = decls_to_tenv(expected)
         
         tenv = extend_env_with_module(module.name,module_tenv,tenv)
     
@@ -184,45 +183,51 @@ def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
         return let_exp_to_tenv(expand_let_star(exp),tenv)
     elif isinstance(exp,Let_Exp):
         vals = tuple(type_of(exp,tenv) for exp in exp.exps)
-        new_env = extend_env_from_pairs(exp.vars,vals,tenv)
-        if exp.body is None:
-            return new_env
-        else:
-            return let_exp_to_tenv(exp.body,new_env)      
+        return extend_env_from_pairs(exp.vars,vals,tenv)
     elif isinstance(exp,Rec_Proc):
         ext_env = tenv
         for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
             ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
         
-        for param,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
-            body_t = type_of(body,extend_env_from_pairs(param,arg_t,ext_env))
+        for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
+            body_t = type_of(body,extend_env_from_pairs(params,arg_t,ext_env))
             check_equal_type(body_t,res_t,body)
         
-        if exp.expr is None:
-            return ext_env
-        else:
-            return let_exp_to_tenv(exp.expr,ext_env)  
+        return ext_env
     else:
         return tenv
 
-def decls_to_tenv(decls:tuple[Var_Decl]):
+Decl_Type = Var_Decl|Opaque_Type_Decl|Transparent_Type_Decl
+Def_Type = Var_Def|Type_Def
+
+def decls_to_tenv(decls:tuple[Decl_Type]) -> Environment:
     if decls == tuple():
         return empty_env()
     else:
         return extend_env(decls[0].name,decls[0].type,decls_to_tenv(decls[1:]))
 
-def defs_to_decls(defs:tuple[Var_Def],tenv) -> tuple[Var_Decl]:
+
+def defs_to_decls(defs:tuple[Def_Type],tenv:Environment) -> tuple[Decl_Type]:
     if defs == tuple():
         return tuple()
+    elif isinstance(defs[0],Var_Def):
+        name = defs[0].name
+        type = type_of(defs[0].expr,tenv)
+        new_tenv = extend_env(name,type,tenv)
+        decl = Var_Decl(name,type)
+        return (decl,) + defs_to_decls(defs[1:],new_tenv)
+    elif isinstance(defs[0],Type_Def):
+        name,type = defs[0].name,defs[0].type
+        new_tenv = extend_env(name,expand_type(type,tenv),tenv)
+        decl = Transparent_Type_Decl(name,type)
+        return (decl,) + defs_to_decls(defs[1:],new_tenv)
     else:
-        var = defs[0].name
-        t = type_of(defs[0].expr,tenv)
-        new_tenv = extend_env(var,t,tenv)
-        ts = defs_to_decls(defs[1:],new_tenv)
-        return (Var_Decl(var,t),) + ts
+        raise Exception(defs,tenv)
+
 
 def subset_interface(actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
     '''
+    Used for untyped modules
     Assumption : order must be same for actual and expected
     
     actual < expected
@@ -245,4 +250,109 @@ def subset_interface(actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
             return recur(decls_1[1:],decls_2[1:])
         
     return recur(actual,expected)
+
+def expand_type(type,tenv:Environment):
+    if isinstance(type,Int_Type|Bool_Type|Void_Type|No_Type):
+        return type.__class__()
+    elif isinstance(type,Pair_Type):
+        return Pair_Type(
+            expand_type(type.t0,tenv),
+            expand_type(type.t1,tenv)
+        )
+    elif isinstance(type,List_Type):
+        return List_Type(expand_type(type.t,tenv))
+    elif isinstance(type,Proc_Type):
+        return Proc_Type(
+            tuple(expand_type(arg_t,tenv) for arg_t in type.arg_type),
+            expand_type(type.result_type,tenv)
+        )
+    elif isinstance(type,Named_Type):
+        return lookup_type_name(type.name,tenv)
+    elif isinstance(type,Qualified_Type):
+        return lookup_qualified_type(type.module_name,type.type_name,tenv)
+    else:
+        print(type)
+        raise Exception()
+
+def expand_types(types,tenv:Environment):
+    return tuple(expand_type(t,tenv) for t in types)
+
+def is_equiv_type(t1,t2,tenv):
+    return expand_type(t1,tenv) == expand_type(t2,tenv)
+
+def decl_subset(actual:tuple[Decl_Type],expected:tuple[Decl_Type],tenv:Environment):
+    '''
+    Used for typed modules
+    Assumption : order must be same for actual and expected
+    
+    actual < expected
+    
+    interface that satisfies actual also satisfy expected.
+    
+    decl satisfy decls_1 implies decl can satisfy decls_2
+    '''
+    def recur(decls_1:tuple[Var_Decl],decls_2:tuple[Var_Decl],tenv:Environment):
+        if decls_2 == tuple():
+            return True
+        elif decls_1 == tuple():
+            return False
+        elif decls_1[0].name != decls_2[0].name:
+            return recur(decls_1[1:],decls_2,
+                         extend_tenv_with_decl(decls_1[0],tenv))
+        else:
+            return (decl_satisfy(decls_1[0],decls_2[0],
+                                 extend_tenv_with_decl(decls_1[0],tenv)) 
+                    and 
+                    recur(decls_1[1:],decls_2[1:],
+                          extend_tenv_with_decl(decls_1[0],tenv)))
+        
+    return recur(actual,expected,tenv)
+
+def decl_satisfy(left:Decl_Type,right:Decl_Type,tenv):
+    return (
+    (isinstance(left,Var_Decl) and
+    isinstance(right,Var_Decl) and
+    is_equiv_type(left.type,right.type,tenv))
+     or
+    (isinstance(left,Transparent_Type_Decl) and
+    isinstance(right,Transparent_Type_Decl) and
+    is_equiv_type(left.type,right.type,tenv))
+    or
+    (isinstance(left,Transparent_Type_Decl) and
+    isinstance(right,Opaque_Type_Decl))
+    or
+    (isinstance(left,Opaque_Type_Decl) and
+    isinstance(right,Opaque_Type_Decl)))
+
+def expand_declarations(module_name,decls:tuple[Decl_Type],tenv):
+    return expand_interface(module_name,decls,tenv)
+
+def expand_interface(module_name,decls:tuple[Decl_Type],tenv):
+    if decls == tuple(): return tuple()
+    elif isinstance(decls[0],Var_Decl):
+        expanded_type = expand_type(decls[0].type,tenv)
+        type_decl = Var_Decl(decls[0].name,expanded_type)
+        return (type_decl,) + expand_interface(module_name,decls[1:],tenv) 
+    elif isinstance(decls[0],Opaque_Type_Decl):
+        expanded_type = Qualified_Type(module_name,decls[0].name)
+        new_tenv = extend_env(decls[0].name,expanded_type,tenv)
+        type_decl = Transparent_Type_Decl(decls[0].name,expanded_type)
+        return (type_decl,) + expand_interface(module_name,decls[1:],new_tenv)
+    elif isinstance(decls[0],Transparent_Type_Decl):
+        expanded_type = expand_type(decls[0].type,tenv)
+        new_tenv = extend_env(decls[0].name,expanded_type,tenv)
+        type_decl = Transparent_Type_Decl(decls[0].name,expanded_type)
+        return (type_decl,) + expand_interface(module_name,decls[1:],new_tenv)
+    else:
+        raise Exception(module_name,decls,tenv)
+
+def extend_tenv_with_decl(decl,tenv) -> Environment:
+    if isinstance(decl,Var_Decl):
+        return tenv
+    elif isinstance(decl,Transparent_Type_Decl):
+        expanded_type = expand_type(decl.type,tenv)
+        return extend_env(decl.name,expanded_type,tenv)
+    elif isinstance(decl,Opaque_Type_Decl):
+        expanded_type = Qualified_Type("%uninitialized",decl.name)
+        return extend_env(decl.name,expanded_type,tenv)
 

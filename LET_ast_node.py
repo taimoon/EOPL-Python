@@ -289,7 +289,7 @@ class Bool_Type:
 
 @dataclass
 class Proc_Type:
-    arg_type:typing.Any
+    arg_type:tuple
     result_type:typing.Any
     def __str__(self) -> str:
         res_t_str = self.result_type.__str__()
@@ -337,7 +337,7 @@ class Var_Def:
 @dataclass
 class Type_Def:
     name:str
-    t:None
+    type:None
 
 @dataclass
 class Var_Decl:
@@ -351,7 +351,7 @@ class Opaque_Type_Decl:
 @dataclass
 class Transparent_Type_Decl:
     name:str
-    t:None
+    type:None
 
 @dataclass
 class Module_Def:

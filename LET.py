@@ -105,17 +105,9 @@ def let_exp_to_env(exp:Let_Exp|Let_Star_Exp|Rec_Proc,env:Environment):
         return let_exp_to_env(expand_let_star(exp),env)
     elif isinstance(exp,Let_Exp):
         vals = tuple(value_of(exp,env) for exp in exp.exps)
-        new_env = extend_env_from_pairs(exp.vars,vals,env)
-        if exp.body is None:
-            return new_env
-        else:
-            return let_exp_to_env(exp.body,new_env)      
+        return extend_env_from_pairs(exp.vars,vals,env)
     elif isinstance(exp,Rec_Proc):
-        new_env = extend_env_rec_multi(exp.var,exp.params,exp.body,env)
-        if exp.expr is None:
-            return new_env
-        else:
-            return let_exp_to_env(exp.expr,new_env)  
+        return extend_env_rec_multi(exp.var,exp.params,exp.body,env)
     else:
         return env
 
@@ -125,6 +117,8 @@ def definitions_to_env(defs:tuple[Var_Def],env:Environment) -> Environment:
     def recur(defs:tuple[Var_Def],env:Environment) -> Environment:
         if defs == tuple():
             return empty_env()
+        elif not isinstance(defs[0],Var_Def):
+            return recur(defs[1:],env)
         else:
             var = defs[0].name
             val = value_of(defs[0].expr,env)

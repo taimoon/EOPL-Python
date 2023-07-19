@@ -30,6 +30,7 @@ def parse_lambda_lang(prog:str):
             case _:
                 raise Exception('Unknown Lambda expr', prog)
     return recur(prog)
+
 def occur_free(var, expr):
     if isinstance(expr, Var_Exp):
         return var == expr.var
@@ -39,6 +40,7 @@ def occur_free(var, expr):
         return occur_free(var, expr.rator) or any(map(lambda rand: occur_free(var, rand), expr.rand))
     else:
         raise Exception("Uknown lambda type", expr)
+
 def unparse(ast):
     if isinstance(ast, Lambda):
         return f'(lambda ({" ".join(map(unparse, ast.bound_var))}) {unparse(ast.body)})'

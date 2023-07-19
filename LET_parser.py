@@ -5,16 +5,19 @@ from LET_ast_node import *
 
 def p_prog(p):
     '''
-    prog : type
+    prog : TYPE type
         | modules expr
         | expr
     '''
     match tuple(p[1:]):
+        case ('type',type):
+            # workaround so that it can parse type expression too
+            p[0] = type
         case (module,expr):
             p[0] = Program(module,expr)
         case (x,):
             p[0] = x
-    
+
 # Expression
 def p_application(p):
     '''
@@ -36,7 +39,7 @@ def p_proc(p):
         case (_,'(',(),')',expr):
             p[0] = Proc_Exp(tuple(),expr,(Void_Type(),))
         case (_,'(',params,')',expr):
-            type = Int_Type|Bool_Type|Proc_Type|No_Type|Void_Type|Pair_Type
+            type = Int_Type|Bool_Type|Proc_Type|No_Type|Void_Type|Pair_Type|Named_Type|Qualified_Type|List_Type
             if len(params[0]) > 1 and isinstance(params[0][1], type):
                 types = tuple(map(lambda p: p[1], params))
                 params = tuple(map(lambda p: p[0], params))
@@ -101,8 +104,8 @@ def p_null(p):
 
 def p_neg_exp(p):
     # neg_exp allows different interpretation of '-' for the purpose of testing
-    """expr : '-' '(' expr ',' expr ')'
-            | '-' expr"""
+    '''expr : '-' '(' expr ',' expr ')'
+            | '-' expr'''
     match tuple(p[1:]): 
         case (op,'(',left ,',' ,right,')'):
             p[0] = Diff_Exp(left,right)
@@ -382,7 +385,21 @@ def p_type(p):
             p[0] = (type,)
         case _:
             raise Exception(str(tuple(p[1:])))
-
+def p_var_type_exp(p):
+    '''
+    type : FROM ID TAKE ID
+        | ID '.' ID
+        | ID
+    '''
+    match tuple(p)[1:]:
+        case ('from',module_name,'take',type_name):
+            p[0] = Qualified_Type(module_name,type_name)
+        case (module_name,'.',type_name):
+            p[0] = Qualified_Type(module_name,type_name)
+        case (type_name,):
+            p[0] = Named_Type(type_name)
+        case _:
+            raise Exception(str(tuple(p)[1:]))
 # Modules
 def p_module_def(p):
     '''
@@ -480,7 +497,8 @@ def p_error(p):
 
 # Build the parser to make parser.parse available
 parser = yacc.yacc(debug=True)
-
+def type_parse(prog):
+    return parser.parse('type ' + prog)
 if __name__ == '__main__':
     while True:
         try:
