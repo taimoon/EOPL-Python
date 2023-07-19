@@ -2,8 +2,6 @@ from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
 
-class Repeated_Module_Error(Exception): pass
-
 def check_equal_type(t1,t2,exp):
     if t1 != t2:
         raise Exception(f"Type didn't match [{t1}] [{t2}] [{exp}]")
@@ -15,15 +13,6 @@ def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
         return type_of(prog.expr,add_modules_to_tenv(prog.modules,env))
     else:
         return type_of(prog, env)
-
-
-def expand_let_star(exp:Let_Star_Exp):
-    def recur(vars,exps):
-        if vars == ():
-            return exp.body
-        else:
-            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
-    return recur(exp.vars,exp.exps)
 
 
 def type_of(expr, env):
@@ -67,15 +56,7 @@ def type_of(expr, env):
         
         return proc_t.result_type
     elif isinstance(expr, Rec_Proc):
-        ext_env = env
-        for var,arg_t,res_t in zip(expr.var,expr.arg_types,expr.res_types):
-            ext_env = extend_env(var,expand_type(Proc_Type(arg_t,res_t),env),ext_env)
-        
-        for param,arg_t,body,res_t in zip(expr.params,expr.arg_types,expr.body,expr.res_types):
-            body_t = type_of(body,extend_env_from_pairs(param,expand_types(arg_t,env),ext_env))
-            check_equal_type(body_t,res_t,body)
-            
-        return type_of(expr.expr,ext_env)
+        return type_of(expr.expr,rec_proc_to_tenv(expr,env))
     elif isinstance(expr,Pair_Exp):
         t0 = type_of(expr.left,env)
         t1 = type_of(expr.right,env)
@@ -156,6 +137,24 @@ def type_of(expr, env):
     else:
         raise Exception("Unknown CHECKED expression type", expr)
 
+def expand_let_star(exp:Let_Star_Exp):
+    def recur(vars,exps):
+        if vars == ():
+            return exp.body
+        else:
+            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
+    return recur(exp.vars,exp.exps)
+
+def rec_proc_to_tenv(exp:Rec_Proc,tenv:Environment) -> Environment:
+    ext_env = tenv
+    for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
+        ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
+    
+    for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
+        body_t = type_of(body,extend_env_from_pairs(params,arg_t,ext_env))
+        check_equal_type(body_t,res_t,body)
+    
+    return ext_env
 
 def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
     for module in modules:
@@ -164,16 +163,9 @@ def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
         interface = defs_to_decls(module.body,local_tenv)
         if not decl_subset(interface,module.interface,tenv):
             raise Exception(f"Does not satisfy interface {module.interface} {interface}")
-
-        try:
-            lookup_module_name(module.name,tenv)
-            raise Repeated_Module_Error
-        except Repeated_Module_Error:
-            raise Repeated_Module_Error(f"Repeated module name of '{module.name}' in {tenv}")
-        except Exception as e:
-            expected = expand_interface(module.name,module.interface,tenv)
-            module_tenv = decls_to_tenv(expected)
         
+        expected = expand_interface(module.name,module.interface,tenv)
+        module_tenv = decls_to_tenv(expected)
         tenv = extend_env_with_module(module.name,module_tenv,tenv)
     
     return tenv
@@ -185,15 +177,7 @@ def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
         vals = tuple(type_of(exp,tenv) for exp in exp.exps)
         return extend_env_from_pairs(exp.vars,vals,tenv)
     elif isinstance(exp,Rec_Proc):
-        ext_env = tenv
-        for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
-            ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
-        
-        for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
-            body_t = type_of(body,extend_env_from_pairs(params,arg_t,ext_env))
-            check_equal_type(body_t,res_t,body)
-        
-        return ext_env
+        return rec_proc_to_tenv(exp,tenv)
     else:
         return tenv
 

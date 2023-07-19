@@ -187,7 +187,15 @@ def extend_nameless_env(val,env):
 def apply_nameless_env(env,addr):
     return env[addr]
 
+class Repeated_Module_Error(Exception): pass
 def extend_env_with_module(module_name,bindings:Environment,env):
+    try:
+        lookup_module_name(module_name,env)
+        raise Repeated_Module_Error
+    except Repeated_Module_Error:
+        raise Repeated_Module_Error(f"Repeated module name of '{module_name}' in {env}")
+    except Exception as e:
+        pass
     return extend_env(module_name,bindings,env)
 
 def lookup_module_name(name,env:Environment):

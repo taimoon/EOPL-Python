@@ -42,7 +42,7 @@ def test_modules():
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 132)
     
-    from CHECKED import Repeated_Module_Error
+    from LET_environment import Repeated_Module_Error
     try:
         prog = '''\
         module m1
