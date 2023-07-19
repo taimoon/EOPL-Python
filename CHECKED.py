@@ -284,33 +284,26 @@ def decl_subset(actual:tuple[Decl_Type],expected:tuple[Decl_Type],tenv:Environme
         elif decls_1 == tuple():
             return False
         elif decls_1[0].name != decls_2[0].name:
-            return recur(decls_1[1:],decls_2,
-                         extend_tenv_with_decl(decls_1[0],tenv))
+            ext_tenv = extend_tenv_with_decl(decls_1[0],tenv)
+            return recur(decls_1[1:],decls_2,ext_tenv)
         else:
-            return (decl_satisfy(decls_1[0],decls_2[0],
-                                 extend_tenv_with_decl(decls_1[0],tenv)) 
-                    and 
-                    recur(decls_1[1:],decls_2[1:],
-                          extend_tenv_with_decl(decls_1[0],tenv)))
+            ext_tenv = extend_tenv_with_decl(decls_1[0],tenv)
+            return (decl_satisfy(decls_1[0],decls_2[0],ext_tenv) 
+                    and recur(decls_1[1:],decls_2[1:],ext_tenv))
         
     return recur(actual,expected,tenv)
 
 
 def decl_satisfy(left:Decl_Type,right:Decl_Type,tenv):
-    return (
-    (isinstance(left,Var_Decl) and
-    isinstance(right,Var_Decl) and
-    is_equiv_type(left.type,right.type,tenv))
-     or
-    (isinstance(left,Transparent_Type_Decl) and
-    isinstance(right,Transparent_Type_Decl) and
-    is_equiv_type(left.type,right.type,tenv))
-    or
-    (isinstance(left,Transparent_Type_Decl) and
-    isinstance(right,Opaque_Type_Decl))
-    or
-    (isinstance(left,Opaque_Type_Decl) and
-    isinstance(right,Opaque_Type_Decl)))
+    return ((isinstance(left,Var_Decl) 
+            and isinstance(right,Var_Decl) 
+            and is_equiv_type(left.type,right.type,tenv))
+            or (isinstance(left,Transparent_Type_Decl) 
+                and isinstance(right,Transparent_Type_Decl) 
+                and is_equiv_type(left.type,right.type,tenv))
+            or (isinstance(left,Transparent_Type_Decl|Opaque_Type_Decl) 
+                and isinstance(right,Opaque_Type_Decl)))
+
 
 def expand_declarations(module_name,decls:tuple[Decl_Type],tenv):
     return expand_interface(module_name,decls,tenv)
