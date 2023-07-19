@@ -473,7 +473,7 @@ def test_checked():
     
     prog = '''\
     letrec int accumulator 
-            (op:(int * int -> int),stepper:(int -> int),f:(int->int),a:int,b:int,acm:int) =
+            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) =
         if less?(a,b)
         then (accumulator op stepper f (stepper a) b (op acm (f a)))
         else acm
@@ -486,7 +486,7 @@ def test_checked():
     
     prog = '''\
     letrec int accumulator 
-            (op:(int * int -> int),stepper:(int -> int),f:(int->int),a:int,b:int,acm:int) =
+            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) =
         if less?(a,b)
         then (accumulator op stepper f (stepper a) b (op acm (f a)))
         else acm
