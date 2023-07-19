@@ -164,18 +164,17 @@ def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
         if not decl_subset(interface,module.interface,tenv):
             raise Exception(f"Does not satisfy interface {module.interface} {interface}")
         
-        expected = expand_interface(module.name,module.interface,tenv)
-        module_tenv = decls_to_tenv(expected)
+        module_tenv = decls_to_tenv(expand_interface(module.name,module.interface,tenv))
         tenv = extend_env_with_module(module.name,module_tenv,tenv)
     
     return tenv
 
 def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
-    if isinstance(exp,Let_Star_Exp):
-        return let_exp_to_tenv(expand_let_star(exp),tenv)
-    elif isinstance(exp,Let_Exp):
+    if isinstance(exp,Let_Exp):
         vals = tuple(type_of(exp,tenv) for exp in exp.exps)
         return extend_env_from_pairs(exp.vars,vals,tenv)
+    elif isinstance(exp,Let_Star_Exp):
+        return let_exp_to_tenv(expand_let_star(exp),tenv)
     elif isinstance(exp,Rec_Proc):
         return rec_proc_to_tenv(exp,tenv)
     else:
@@ -235,6 +234,7 @@ def subset_interface(actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
         
     return recur(actual,expected)
 
+
 def expand_type(type,tenv:Environment):
     if isinstance(type,Int_Type|Bool_Type|Void_Type|No_Type):
         return type.__class__()
@@ -258,11 +258,14 @@ def expand_type(type,tenv:Environment):
         print(type)
         raise Exception()
 
+
 def expand_types(types,tenv:Environment):
     return tuple(expand_type(t,tenv) for t in types)
 
+
 def is_equiv_type(t1,t2,tenv):
     return expand_type(t1,tenv) == expand_type(t2,tenv)
+
 
 def decl_subset(actual:tuple[Decl_Type],expected:tuple[Decl_Type],tenv:Environment):
     '''
@@ -292,6 +295,7 @@ def decl_subset(actual:tuple[Decl_Type],expected:tuple[Decl_Type],tenv:Environme
         
     return recur(actual,expected,tenv)
 
+
 def decl_satisfy(left:Decl_Type,right:Decl_Type,tenv):
     return (
     (isinstance(left,Var_Decl) and
@@ -311,24 +315,26 @@ def decl_satisfy(left:Decl_Type,right:Decl_Type,tenv):
 def expand_declarations(module_name,decls:tuple[Decl_Type],tenv):
     return expand_interface(module_name,decls,tenv)
 
-def expand_interface(module_name,decls:tuple[Decl_Type],tenv):
-    if decls == tuple(): return tuple()
+
+def expand_interface(module_name,decls:tuple[Decl_Type],tenv:Environment) -> tuple[Decl_Type]:
+    if decls == tuple(): 
+        return tuple()
     elif isinstance(decls[0],Var_Decl):
-        expanded_type = expand_type(decls[0].type,tenv)
-        type_decl = Var_Decl(decls[0].name,expanded_type)
-        return (type_decl,) + expand_interface(module_name,decls[1:],tenv) 
+        decl = Var_Decl(decls[0].name,expand_type(decls[0].type,tenv))
+        return (decl,) + expand_interface(module_name,decls[1:],tenv) 
     elif isinstance(decls[0],Opaque_Type_Decl):
         expanded_type = Qualified_Type(module_name,decls[0].name)
         new_tenv = extend_env(decls[0].name,expanded_type,tenv)
-        type_decl = Transparent_Type_Decl(decls[0].name,expanded_type)
-        return (type_decl,) + expand_interface(module_name,decls[1:],new_tenv)
+        decl = Transparent_Type_Decl(decls[0].name,expanded_type)
+        return (decl,) + expand_interface(module_name,decls[1:],new_tenv)
     elif isinstance(decls[0],Transparent_Type_Decl):
         expanded_type = expand_type(decls[0].type,tenv)
         new_tenv = extend_env(decls[0].name,expanded_type,tenv)
-        type_decl = Transparent_Type_Decl(decls[0].name,expanded_type)
-        return (type_decl,) + expand_interface(module_name,decls[1:],new_tenv)
+        decl = Transparent_Type_Decl(decls[0].name,expanded_type)
+        return (decl,) + expand_interface(module_name,decls[1:],new_tenv)
     else:
         raise Exception(module_name,decls,tenv)
+
 
 def extend_tenv_with_decl(decl,tenv) -> Environment:
     if isinstance(decl,Var_Decl):
