@@ -385,6 +385,8 @@ def p_type(p):
             p[0] = (type,)
         case _:
             raise Exception(str(tuple(p[1:])))
+
+
 def p_var_type_exp(p):
     '''
     type : FROM ID TAKE ID
@@ -400,13 +402,15 @@ def p_var_type_exp(p):
             p[0] = Named_Type(type_name)
         case _:
             raise Exception(str(tuple(p)[1:]))
+
+
 # Modules
 def p_module_def(p):
     '''
-    module :  MODULE ID INTERFACE '[' decl_opt ']' BODY '[' module_body_opt ']'
-        | MODULE ID INTERFACE '[' decl_opt ']' BODY LET_HEADER IN '[' module_body_opt ']'
-        | MODULE ID INTERFACE '[' decl_opt ']' BODY LETREC_HEADER IN '[' module_body_opt ']'
-        | MODULE ID INTERFACE '[' decl_opt ']' BODY modules '[' module_body_opt ']'
+    module :  MODULE ID INTERFACE interface BODY module_body
+        | MODULE ID INTERFACE interface BODY LET_HEADER IN module_body
+        | MODULE ID INTERFACE interface BODY LETREC_HEADER IN module_body
+        | MODULE ID INTERFACE interface BODY modules module_body
     
     modules : module
         | module modules
@@ -414,11 +418,11 @@ def p_module_def(p):
     modules = ()
     let_exp = None
     match tuple(p[1:]):
-        case (kw,name,interface_kw,'[',declarations,']',body_kw,'[',body,']'):
+        case (kw,name,interface_kw,declarations,body_kw,body):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
-        case (kw,name,interface_kw,'[',declarations,']',body_kw,let_exp,'in','[',body,']'):
+        case (kw,name,interface_kw,declarations,body_kw,let_exp,'in',body):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
-        case (kw,name,interface_kw,'[',declarations,']',body_kw,modules,'[',body,']'):
+        case (kw,name,interface_kw,declarations,body_kw,modules,body):
             p[0] = Module_Def(name,declarations,modules,let_exp,body)
         case (module,):
             p[0] = (module,)
@@ -426,6 +430,27 @@ def p_module_def(p):
             p[0] = (module,) + modules
         case _:
             raise NotImplemented
+
+def p_interface(p):
+    '''
+    interface : '[' decl_opt ']'
+        | '(' '(' param_interfaces ')' RIGHTARROW interface ')'
+    param_interfaces : ID ':' interface
+        | ID ':' interface param_interfaces
+    '''
+    match tuple(p[1:]):
+        case ('[',decls,']'):
+            p[0] = decls
+        case ('(','(',param_interfaces,')','=>',res_interface,')'):
+            params = tuple(p[0] for p in param_interfaces)
+            interfaces = tuple(p[1] for p in param_interfaces)
+            p[0] = Proc_Interface(params,interfaces,res_interface)
+        case (param,':',interface):
+            p[0] = ((param,interface),)
+        case (param,':',interface,param_interfaces):
+            p[0] = ((param,interface),) + param_interfaces
+        case _:
+            raise Exception()
 
 def p_declarations(p):
     '''
@@ -461,21 +486,40 @@ def p_decl(p):
 
 def p_module_body(p):
     '''
-    module_body_opt :
-        | module_body
-    module_body : def
-        | def module_body
+    module_body : '[' ']'
+        | '[' defs ']'
+        | MODULE_PROC  '(' param_interfaces ')' module_body
+        | '(' vars ')'
+        | ID
     '''
     match tuple(p[1:]):
-        case ():
+        case ('[',']'):
             p[0] = tuple()
-        case (definitons,) if isinstance(definitons,tuple):
+        case ('[',definitons,']') if isinstance(definitons,tuple):
             p[0] = definitons
+        case ('module-proc','(',param_interfaces,')',module_body):
+            params = tuple(p[0] for p in param_interfaces)
+            interfaces = tuple(p[1] for p in param_interfaces)
+            p[0] = Proc_Module_Body(params,interfaces,module_body)
+        case ('(',vars,')'):
+            p[0] = App_Module_Body(vars[0],vars[1:])
+        case (var,):
+            p[0] = Var_Module_Body(var)
+        case _:
+            raise Exception()
+
+def p_defs(p):
+    '''
+    defs : def
+        | def defs
+    '''
+    match tuple(p[1:]):
         case (definition,definitons):
             p[0] = (definition,) + definitons
         case (definition,):
             p[0] = (definition,)
-    
+
+
 def p_module_body_def(p):
     '''
     def : ID '=' expr
@@ -499,6 +543,7 @@ def p_error(p):
 parser = yacc.yacc(debug=True)
 def type_parse(prog):
     return parser.parse('type ' + prog)
+
 if __name__ == '__main__':
     while True:
         try:

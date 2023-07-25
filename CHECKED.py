@@ -83,7 +83,7 @@ def type_of(expr, env):
     elif isinstance(expr,Null_Exp):
         return Bool_Type()
     elif isinstance(expr,Qualified_Var_Exp):
-        return lookup_qualified_var(expr.module_name,expr.var_name,env)
+        return lookup_qualified_type(expr.module_name,expr.var_name,env)
     # Statement
     elif isinstance(expr,Sequence):
         t = None
@@ -146,30 +146,32 @@ def expand_let_star(exp:Let_Star_Exp):
     return recur(exp.vars,exp.exps)
 
 def rec_proc_to_tenv(exp:Rec_Proc,tenv:Environment) -> Environment:
-    ext_env = tenv
     for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
-        ext_env = extend_env(var,Proc_Type(arg_t,res_t),ext_env)
+        tenv = extend_env(var,Proc_Type(arg_t,res_t),tenv)
     
     for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
-        body_t = type_of(body,extend_env_from_pairs(params,arg_t,ext_env))
+        body_t = type_of(body,extend_env_from_pairs(params,arg_t,tenv))
         check_equal_type(body_t,res_t,body)
     
-    return ext_env
+    return tenv
 
 def add_modules_to_tenv(modules:tuple[Module_Def],tenv):
     for module in modules:
         local_tenv = add_modules_to_tenv(module.modules,tenv) 
         local_tenv = let_exp_to_tenv(module.let_block,local_tenv)
-        interface = defs_to_decls(module.body,local_tenv)
-        if not decl_subset(interface,module.interface,tenv):
-            raise Exception(f"Does not satisfy interface {module.interface} {interface}")
+        interface = interface_of(module.body,local_tenv)
+        if not interface_comp(interface,module.interface,tenv):
+            raise Exception(f"Does not satisfy interface\nresult\t\t: {interface}\nexpected\t: {module.interface}")
         
-        module_tenv = decls_to_tenv(expand_interface(module.name,module.interface,tenv))
-        tenv = extend_env_with_module(module.name,module_tenv,tenv)
+        if isinstance(module.interface,Proc_Interface):
+            decls = module.interface
+        else:
+            decls = expand_interface(module.name,module.interface,tenv)
+        tenv = extend_tenv_with_module(module.name,decls,tenv)
     
     return tenv
 
-def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
+def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv:Environment):
     if isinstance(exp,Let_Exp):
         vals = tuple(type_of(exp,tenv) for exp in exp.exps)
         return extend_env_from_pairs(exp.vars,vals,tenv)
@@ -180,14 +182,108 @@ def let_exp_to_tenv(exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv):
     else:
         return tenv
 
-Decl_Type = Var_Decl|Opaque_Type_Decl|Transparent_Type_Decl
-Def_Type = Var_Def|Type_Def
 
-def decls_to_tenv(decls:tuple[Decl_Type]) -> Environment:
-    if decls == tuple():
-        return empty_env()
+def decls_to_tenv(decls:tuple[Decl_Type]|Proc_Interface) -> Environment:
+    raise DeprecationWarning
+
+
+def interface_of(body:Module_Body_T,tenv:Environment) -> tuple[Decl_Type]:
+    if isinstance(body,Var_Module_Body):
+        return lookup_module_tenv(body.name)
+    elif isinstance(body,Proc_Module_Body):
+        new_env = tenv
+        
+        params = body.params
+        interfaces = body.interfaces
+        body = body.body
+        
+        for param,iface in zip(params,interfaces):
+            iface = expand_interface(param,iface,new_env)
+            new_env = extend_tenv_with_module(param,iface,new_env)
+        
+        body_iface = interface_of(body,new_env)
+        return Proc_Interface(params,interfaces,body_iface)
+    elif isinstance(body,App_Module_Body):
+        proc_iface = lookup_module_tenv(body.operator,tenv)
+        if not isinstance(proc_iface,Proc_Interface):
+            raise Exception(f"Operator Module is not procedural module {body.operator} {proc_iface}")
+        
+        modules = tuple(lookup_module_tenv(defn,tenv) for defn in body.operands)
+        for actual,expected in zip(modules,proc_iface.interfaces):
+            if not interface_comp(actual,expected,tenv):
+                raise Exception(f"Does not satisfy interface {actual} {expected}")
+        
+        res_interface = proc_iface.res_interface
+        for param,name in zip(proc_iface.params, body.operands):
+            res_interface = rename_interface(res_interface,param,name)
+        return res_interface
+    elif isinstance(body[0],Def_Type):
+        return defs_to_decls(body,tenv)
     else:
-        return extend_env(decls[0].name,decls[0].type,decls_to_tenv(decls[1:]))
+        print(body)
+        raise NotImplementedError
+
+
+def fresh_name():
+    from itertools import product
+    from string import ascii_lowercase
+    for c in product(ascii_lowercase,repeat = 3):
+        yield ''.join(c)
+        
+fresh_name = fresh_name()
+
+def fresh_name_module(name):
+    return f'%fresh_name_{name}_{next(fresh_name)}'
+
+def interface_comp(actual,expected,tenv) -> bool:
+    def is_simple_interface(t):
+        return isinstance(t,tuple) and isinstance(t[0],Decl_Type)
+    areinstance = lambda type,*args: all(isinstance(arg,type) for arg in args)
+    # if isinstance(actual,Proc_Interface) and isinstance(expected,Proc_Interface):
+    if areinstance(Proc_Interface,actual,expected):
+        new_tenv = tenv
+        res_iface1 = actual.res_interface
+        res_iface2 = expected.res_interface
+        it = zip(actual.params,expected.params,actual.interfaces,expected.interfaces)
+        for param1,param2,iface1,iface2 in it:
+            new_name = fresh_name_module(param1)
+            res_iface1 = rename_interface(res_iface1,param1,new_name)
+            res_iface2 = rename_interface(res_iface2,param2,new_name)
+            if not interface_comp(iface2,iface1,new_tenv):
+                return False
+            iface1 = expand_interface(new_name,iface1,tenv)
+            new_tenv = extend_env_with_module(new_name,iface1,new_tenv)
+        
+        return interface_comp(res_iface1,res_iface2,new_tenv)
+    elif is_simple_interface(actual) and is_simple_interface(expected):
+        return decl_subset(actual,expected,tenv)
+    else:
+        print(type(actual),type(expected))
+        raise NotImplementedError
+
+def rename_type(type,name,new_name):
+    if isinstance(type,Proc_Type):
+        arg_type = tuple(rename_type(arg_t,name,new_name) for arg_t in type.arg_type)
+        res_type = rename_type(type.result_type,name,new_name)
+        return Proc_Type(arg_type,res_type)
+    elif isinstance(type,Qualified_Type):
+        new_name = new_name if type.module_name == name else name
+        return Qualified_Type(new_name,type.type_name)
+    else:
+        return type
+
+def rename_interface(interface:tuple[Decl_Type],name,new_name):
+    def rename(decl:Decl_Type,name=name,new_name=new_name):
+        if isinstance(decl,Var_Decl|Transparent_Type_Decl):
+            new_type = rename_type(decl.type,name,new_name)
+            return decl.__class__(decl.name,new_type)
+        elif isinstance(decl,Opaque_Type_Decl):
+            new_name = name if decl.name == name else new_name
+            return Opaque_Type_Decl(new_name)
+        else:
+            raise NotImplementedError
+    return tuple(rename(decl) for decl in interface)
+            
 
 
 def defs_to_decls(defs:tuple[Def_Type],tenv:Environment) -> tuple[Decl_Type]:

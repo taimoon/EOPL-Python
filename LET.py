@@ -96,7 +96,7 @@ def add_modules_to_env(modules:tuple[Module_Def],env):
     for module in modules:
         local_env = add_modules_to_env(module.modules,env) # TODO : check correctness
         local_env = let_exp_to_env(module.let_block,local_env)
-        bindings = definitions_to_env(module.body,local_env)
+        bindings = value_of_module_body(module.body,local_env)
         env = extend_env_with_module(module.name,bindings,env)
     return env
 
@@ -111,13 +111,33 @@ def let_exp_to_env(exp:Let_Exp|Let_Star_Exp|Rec_Proc,env:Environment):
     else:
         return env
 
+def value_of_module_body(defs:Module_Body_T,env:Environment) -> Environment:
+    if isinstance(defs,Var_Module_Body):
+        return lookup_module_name(defs.name,env)
+    elif isinstance(defs,Proc_Module_Body):
+        return Proc_Module(defs.params,defs.body,env)
+    elif isinstance(defs,App_Module_Body):
+        module_proc:Proc_Module = lookup_module_name(defs.operator,env)
+        if not isinstance(module_proc,Proc_Module):
+            raise Exception(f"Operator Module is not procedural module {defs.operator}")
+        modules = tuple(lookup_module_name(defn,env) for defn in defs.operands)
+        new_env = module_proc.env
+        for module_name,module in zip(module_proc.params,modules):
+            new_env = extend_env_with_module(module_name,module,new_env)
+        return value_of_module_body(module_proc.body,new_env)
+    elif isinstance(defs[0],Def_Type):
+        return definitions_to_env(defs,env)
+    else:
+        raise NotImplemented()
+
 def definitions_to_env(defs:tuple[Var_Def],env:Environment) -> Environment:
     # must be recursive
     'let* semantic'
     def recur(defs:tuple[Var_Def],env:Environment) -> Environment:
+        
         if defs == tuple():
             return empty_env()
-        elif not isinstance(defs[0],Var_Def):
+        elif isinstance(defs[0],Type_Def):
             return recur(defs[1:],env)
         else:
             var = defs[0].name

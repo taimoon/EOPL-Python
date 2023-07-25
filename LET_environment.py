@@ -1,5 +1,5 @@
-from LET_ast_node import *
 from dataclasses import dataclass
+from LET_ast_node import *
 
 # Object representation
 @dataclass
@@ -40,7 +40,7 @@ class Environment:
                 return newref(Proc_Val(val.params,val.body,val.delayed_env()))
             else:
                 return val
-        raise Exception("Unbound variable",src_var,f"env - {self.env}")
+        raise Exception("Unbound variable",src_var,str(self))
     
     def apply_senv(self,src_var):
         for lex_addr,(var,_) in enumerate(self.env):
@@ -74,15 +74,35 @@ class Environment:
         for var,val in self.env:
             if var != name:
                 continue
-            elif not isinstance(val,Environment):
+            elif not isinstance(val,Environment|Proc_Module):
                 continue
             else:
                 return val
-        raise Exception("Unbound modules",name, f"env - {self.env}")
+        raise Exception("Unbound modules",name, self.__str__())
     
     def lookup_qualified_var(self,name,var):
         env = self.lookup_module(name)
         return env.apply(var)
+    
+    def lookup_module_tenv(self,name):
+        for var,val in self.env:
+            if var != name:
+                continue
+            elif not isinstance(val, Proc_Interface) and not (isinstance(val,tuple) and isinstance(val[0],Decl_Type)):
+                continue
+            else:
+                return val
+        raise Exception("Unbound modules",name, self.__str__())
+    
+    def lookup_qualified_var_tenv(self,module_name,name):
+        decls = self.lookup_module_tenv(module_name)
+        for decl in decls:
+            if decl.name != name:
+                continue
+            else:
+                return decl.type
+        raise Exception("Unbound modules",name, self.__str__())
+
 
 def empty_env():
     return Environment()
@@ -188,9 +208,10 @@ def apply_nameless_env(env,addr):
     return env[addr]
 
 class Repeated_Module_Error(Exception): pass
-def extend_env_with_module(module_name,bindings:Environment,env):
+
+def extend_env_with_module(module_name,bindings:Environment,env:Environment):
     try:
-        lookup_module_name(module_name,env)
+        env.lookup_module(module_name,env)
         raise Repeated_Module_Error
     except Repeated_Module_Error:
         raise Repeated_Module_Error(f"Repeated module name of '{module_name}' in {env}")
@@ -208,4 +229,20 @@ def lookup_type_name(var,tenv:Environment):
     return tenv.apply(var)
 
 def lookup_qualified_type(name,type_name,tenv:Environment):
-    return lookup_qualified_var(name,type_name,tenv)
+    return lookup_qualified_var_tenv(name,type_name,tenv)
+
+def lookup_module_tenv(module_name,tenv:Environment):
+    return tenv.lookup_module_tenv(module_name)
+
+def extend_tenv_with_module(module_name,interface:tuple[Decl_Type],tenv:Environment):
+    try:
+        lookup_module_tenv(module_name,tenv)
+        raise Repeated_Module_Error
+    except Repeated_Module_Error:
+        raise Repeated_Module_Error(f"Repeated module name of '{module_name}' in {tenv}")
+    except Exception as e: # TODO : Bad Practice, remove it in future
+        pass
+    return extend_env(module_name,interface,tenv)
+
+def lookup_qualified_var_tenv(module_name,name,tenv:Environment):
+    return tenv.lookup_qualified_var_tenv(module_name,name)

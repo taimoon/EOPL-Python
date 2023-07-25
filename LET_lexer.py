@@ -17,9 +17,9 @@ reserved = {
    'let*'   : 'LET_STAR',
    'cond'   : 'COND',
    'end'    : 'END',
-   'emptylist': 'NULL',
+   'emptylist' : 'NULL',
    'unpack' : 'UNPACK',
-   'unpair': 'UNPAIR',
+   'unpair' : 'UNPAIR',
    
    'zero?' : 'ZERO_TEST',
    'minus' : 'MINUS',
@@ -32,7 +32,7 @@ reserved = {
    'greater?' : 'GREATER_TEST',
    'equal?'   : 'EQUAL_TEST',
    'cons'     : 'CONS',
-   'newpair': 'NEWPAIR',
+   'newpair' : 'NEWPAIR',
    
    'list'   : 'LIST',
    
@@ -41,23 +41,24 @@ reserved = {
    'deref'  : 'DEREF',
    'setref' : 'SETREF',
    'set'    : 'SET',
-   'setcar': 'SETCAR',
-   'setcdr': 'SETCDR',
+   'setcar' : 'SETCAR',
+   'setcdr' : 'SETCDR',
    
    'void' : 'VOID',
-   'int': 'INT',
+   'int' : 'INT',
    'bool' : 'BOOL',
    'pairof' : 'PAIROF',
    'listof': 'LISTOF',
    
    'module' : 'MODULE',
    'interface': 'INTERFACE',
-   'body': 'BODY',
-   'from': 'FROM',
+   'body' : 'BODY',
+   'from' : 'FROM',
    'take' : 'TAKE',
    'opaque' : 'OPAQUE',
    'transparent' : 'TRANSPARENT',
-   'type': 'TYPE',
+   'module-proc' :'MODULE_PROC',
+   'type' : 'TYPE',
 }
 
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())

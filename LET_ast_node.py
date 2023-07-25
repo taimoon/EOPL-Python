@@ -353,21 +353,53 @@ class Transparent_Type_Decl:
     name:str
     type:None
 
+Decl_Type = Var_Decl|Opaque_Type_Decl|Transparent_Type_Decl
+Def_Type = Var_Def|Type_Def
+
 @dataclass
 class Module_Def:
     name:str
-    interface: tuple[Var_Decl]
+    interface: tuple[Decl_Type]
     modules:tuple
     let_block:Let_Exp|Let_Star_Exp|Letmutable_Exp|Rec_Proc
-    body: tuple[Var_Def]
-    
+    body: tuple[Def_Type]
+
 @dataclass
 class Qualified_Var_Exp:
     module_name:str
     var_name:str
 
 @dataclass
+class Proc_Interface:
+    params:tuple
+    interfaces:tuple[tuple[Decl_Type]]
+    res_interface:tuple[Decl_Type]
+
+@dataclass
+class Proc_Module:
+    'interpreter data structure'
+    params:tuple
+    body:tuple[Def_Type]
+    env:None
+
+@dataclass
+class Proc_Module_Body:
+    params:tuple
+    interfaces:tuple[tuple[Decl_Type]]
+    body:tuple[Def_Type]
+
+@dataclass
+class Var_Module_Body:
+    name:str
+
+@dataclass
+class App_Module_Body:
+    operator:None
+    operands:tuple
+
+Module_Body_T  = tuple[Var_Def|Type_Def]|Proc_Module_Body|Var_Module_Body|App_Module_Body
+
+@dataclass
 class Program:
     modules:tuple[Module_Def]
     expr:typing.Any
-    
