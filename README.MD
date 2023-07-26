@@ -57,3 +57,5 @@
    (add 3 4)
    ```
 2. Specify and implement multi-arguments PROC_MODULES
+3. Complete Chapter 6 - Continuation Passing Style
+4. Complete Chapter 9 - Objects and Classes
