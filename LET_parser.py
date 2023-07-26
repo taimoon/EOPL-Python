@@ -13,10 +13,15 @@ def p_prog(p):
         case ('type',type):
             # workaround so that it can parse type expression too
             p[0] = type
-        case (module,expr):
-            p[0] = Program(module,expr)
+        case (modules,expr) if isinstance(modules[0],Module_Def):
+            p[0] = Program(tuple(),modules,expr)
         case (x,):
             p[0] = x
+
+def p_prog_cls(p):
+    'prog : class_decls expr'
+    decls,expr = p[1:]
+    p[0] = Program(decls,(),expr)
 
 # Expression
 def p_application(p):
@@ -533,6 +538,92 @@ def p_module_body_def(p):
         case _:
             print(tuple(p[1:]))
             raise NotImplemented
+
+def p_class_decl(p):
+    '''
+    class_decl : CLASS ID EXTENDS ID field_decl_opt method_decl_opt
+    '''
+    match tuple(p[1:]):
+        case ('class',cls_name,'extends',parent,fields,methods):
+            p[0] = Class_Decl(cls_name,parent,fields,methods)
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplementedError 
+
+def p_cls_decl_opt(p):
+    '''
+    field_decl_opt : 
+        | field_decls
+    method_decl_opt :
+        | method_decls
+    '''
+    match tuple(p[1:]):
+        case ():
+            p[0] = ()
+        case (decls,):
+            p[0] = decls
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplementedError
+
+def p_field_decls(p):
+    '''
+    class_decls : class_decl
+        | class_decl class_decls
+    field_decls : field_decl
+        | field_decl field_decls
+    field_decl : FIELD ID
+    '''
+    match tuple(p[1:]):
+        case ('field',name):
+            p[0] = name
+        case (decl,decls):
+            p[0] = (decl,) + decls
+        case (decl,):
+            p[0] = (decl,)
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplementedError
+
+def p_method_decl(p):
+    '''
+    method_decls : method_decl
+        | method_decl method_decls
+    
+    method_decl : METHOD ID '(' params_opt ')' expr
+    '''
+    match tuple(p[1:]):
+        case ('method',var,'(',params,')',expr):
+            p[0] = Method_Decl(var,params,expr)
+        case ('method',var,'(',(),')',expr):
+            p[0] = Method_Decl(var,(),expr)
+        case (decl,decls):
+            p[0] = (decl,) + decls
+        case (decl,):
+            p[0] = (decl,)
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplementedError
+
+def p_class_other(p):
+    '''
+    expr : NEW ID '(' list_opt ')'
+        | SEND expr ID '(' list_opt ')'
+        | SUPER ID '(' list_opt ')'
+        | SELF
+    '''
+    match tuple(p[1:]):
+        case ('new',cls_name,'(',exps,')'):
+            p[0] = New_Obj_Exp(cls_name,exps)
+        case ('send',expr,method_name,'(',exps,')'):
+            p[0] = Method_Call_Exp(expr,method_name,exps)
+        case ('super',method_name,'(',exps,')'):
+            p[0] = Super_Call_Exp(method_name,exps)
+        case ('self',):
+            p[0] = Self_Exp()
+        case _:
+            print(tuple(p[1:]))
+            raise NotImplementedError
 
 # Error rule for syntax errors
 def p_error(p):

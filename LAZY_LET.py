@@ -3,11 +3,7 @@ from LET_environment import *
 from memory import *
 
 '''
-newref(expr)
-setref(expr)
-deref(expr)
-letmutable {id = expr}+ in expr
-# all variables are mutable unless introduced by let
+LAZY_LET extends IMPLICIT_REFS
 '''
 
 def init_env():
@@ -32,7 +28,6 @@ def value_of_prog(prog, env = init_env(), parse = parser.parse):
 
 def apply_proc(proc:Proc_Val,args,env:Environment):
     for param,arg in zip(proc.params,args):
-        # env = extend_env(param,newref(arg),env)
         env = extend_env(param,arg,env)
     return value_of(proc.body, env)
 
@@ -67,7 +62,6 @@ def value_of(expr, env):
         else:
             return value_of(expr.alter,env)
     elif isinstance(expr, Proc_Exp):
-        # return Proc_Val(expr.params,expr.body,empty_env()) # dynamic scoping
         return Proc_Val(expr.params,expr.body,env) # lexical scoping
     elif isinstance(expr, App_Exp):
         proc = value_of(expr.operator,env)
@@ -80,9 +74,8 @@ def value_of(expr, env):
             return proc.op(*args)
         else:
             args = map(lambda o : value_of_operand(o, env), expr.operand)
-        return apply_proc(proc,args,proc.env) # lexical scoping
+        return apply_proc(proc,args,proc.env)
     elif isinstance(expr, Rec_Proc):
-        # extend_env_rec_ref(expr.var,expr.params,expr.body,env)
         return value_of(expr.expr, extend_env_rec_ref(expr.var,expr.params,expr.body,env))
     elif isinstance(expr,Let_Exp):
         # introduce immutability
@@ -113,7 +106,7 @@ def value_of(expr, env):
         return loc
     elif isinstance(expr,Assign_Exp):
         res = apply_env(env,expr.var)
-        if not is_reference(res):
+        if isinstance(res,Immutable):
             raise Exception(f"error : attempt to modify immutable variable {expr.var}")
         setref(res,value_of(expr.expr,env))
     # derived form
@@ -145,7 +138,7 @@ def value_of(expr, env):
             if vars == ():
                 return expr.body
             else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+                return Let_Exp((vars[0],),(exprs[0],),expand(vars[1:],exprs[1:]))
         return value_of(expand(expr.vars,expr.exps),env)
     elif isinstance(expr,Letmutable_Exp):
         return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)

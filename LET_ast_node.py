@@ -129,6 +129,13 @@ class Pair:
             x = '(' + x
         return x + ' ' + self.cdr.__str__(False)
 
+    @staticmethod
+    def list_to_pair(*args):
+        if args == ():
+            return NULL()
+        else:
+            return Pair(args[0], Pair.list_to_pair(*args[1:]))
+    
 @dataclass
 class Pair_Exp:
     left:None
@@ -142,30 +149,41 @@ class Unpair_Exp:
     pair_exp:None
     expr:None
 
-from memory import newref,deref,setref
+
 @dataclass(init=False)
 class Mutable_Pair:
     _car: typing.Any
     _cdr: typing.Any
     
     def __init__(self,left,right):
-        self._car = newref(left)
-        self._cdr = newref(right)
-    
+        from memory import newref,setref,deref
+        self.newref = newref
+        self.setref = setref
+        self.deref = deref
+        self._car = self.newref(left)
+        self._cdr = self.newref(right)
+        
     def setcar(self,v):
-        setref(self._car,v)
+        self.setref(self._car,v)
     
     def setcdr(self,v):
-        setref(self._cdr,v)
+        self.setref(self._cdr,v)
     
     @property
     def car(self):
-        return deref(self._car)
+        return self.deref(self._car)
     
     @property
     def cdr(self):
-        return deref(self._cdr)
+        return self.deref(self._cdr)
 
+    @staticmethod
+    def list_to_pair(*args):
+        if args == ():
+            return NULL()
+        else:
+            return Mutable_Pair(args[0], Mutable_Pair.list_to_pair(*args[1:]))
+    
     def __iter__(self):
         if isinstance(self.cdr,NULL):
             yield self.car
@@ -191,8 +209,8 @@ class Mutable_Pair:
         if start:
             x = '(' + x
         return x + ' ' + self.cdr.__str__(False)
-    
 
+        
 @dataclass
 class List:
     exps:typing.Any
@@ -400,6 +418,40 @@ class App_Module_Body:
 Module_Body_T  = tuple[Var_Def|Type_Def]|Proc_Module_Body|Var_Module_Body|App_Module_Body
 
 @dataclass
+class Method_Decl:
+    name:str
+    vars:tuple
+    body:None
+
+@dataclass
+class Class_Decl:
+    name:str
+    parent:str
+    fields:tuple[str]
+    methods:tuple[Method_Decl]
+
+@dataclass
 class Program:
+    classes:tuple[Class_Decl]
     modules:tuple[Module_Def]
     expr:typing.Any
+
+@dataclass
+class New_Obj_Exp:
+    cls_name:str
+    operands:tuple
+
+@dataclass
+class Method_Call_Exp:
+    obj_exp:None
+    method_name:str
+    operands:tuple
+
+@dataclass
+class Super_Call_Exp:
+    method_name:str
+    operands:tuple
+
+@dataclass
+class Self_Exp:
+    pass

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 the_store = []
 
 @dataclass
@@ -16,7 +17,7 @@ def init_store():
     the_store = empty_store()
 
 def is_reference(id):
-    return isinstance(id,int)
+    raise DeprecationWarning
 
 def newref(val):
     the_store.append(val)

@@ -59,6 +59,16 @@ reserved = {
    'transparent' : 'TRANSPARENT',
    'module-proc' :'MODULE_PROC',
    'type' : 'TYPE',
+   
+   'class' : 'CLASS',
+   'method' : 'METHOD',
+   'new' : 'NEW',
+   'send' : 'SEND',
+   'super' : 'SUPER',
+   'self' : 'SELF',
+   'extends' : 'EXTENDS',
+   'field' : 'FIELD',
+   
 }
 
 tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())

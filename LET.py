@@ -1,6 +1,6 @@
-from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
+from LET_ast_node import *
 
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):

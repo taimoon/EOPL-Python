@@ -146,18 +146,12 @@ def init_tenv():
     return env
 
 def get_all_primitive_implementation():
-    def list_to_pair(*args):
-        if args == ():
-            return NULL()
-        else:
-            return Pair(args[0], list_to_pair(*args[1:]))
     # rather than using nameless lambda, because these print names
     def iszero(x): return x == 0
     def minus(x): return -x
     def car(t): return t.car
     def cdr(t): return t.cdr
     
-    # iszero = lambda x : x == 0
     from operator import sub,add,mul,truediv,gt,lt,eq
     corspd = {'-'  : sub,
               '+'  : add,
@@ -171,8 +165,9 @@ def get_all_primitive_implementation():
               'minus'   : minus,
               'car'     : car,
               'cdr'     : cdr,
-              'list'    : list_to_pair,
+              'list'    : Pair.list_to_pair,
               'print'   : print,
+              'null?'   : lambda x: isinstance(x,NULL)
             }
     return corspd
 

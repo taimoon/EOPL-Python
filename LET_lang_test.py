@@ -1,8 +1,10 @@
 import sys
 sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
 IS_DYNAMIC = False
-from LET_environment import *
+
+
 def test_env():
+    from LET_environment import extend_env_from_pairs,init_env,apply_env
     env = extend_env_from_pairs(('x','v','i','x'),
                                 (10,5,1,7),
                                 init_env())
@@ -11,6 +13,7 @@ def test_env():
     assert(apply_env(env,'x') == 10)
 
 def test_diff_exp(value_of_prog):
+    from LET_environment import extend_env_from_pairs,init_env,apply_env
     env = extend_env_from_pairs(('i','v','x'),
                                 (1,5,10),
                                 init_env())
@@ -42,6 +45,7 @@ def test_bi_exp(value_of_prog):
     assert(value_of_prog(prog) is True)
 
 def test_if(value_of_prog):
+    from LET_environment import extend_env_from_pairs,init_env
     env = extend_env_from_pairs(('x','y'),(33,22),init_env())
     prog = 'if zero?(-(x,11)) then -(y,2)  else -(y,4)'
     assert(value_of_prog(prog,env) == 18)
@@ -447,6 +451,7 @@ def test_checked():
     from CHECKED import type_of_prog
     from LET import value_of_prog
     from LET_parser import type_parse as parse
+    from LET_ast_node import Pair,NULL,No_Type,Int_Type
     prog = 'proc (x : int) -(x,1)'
     res = type_of_prog(prog)
     ans = '(int -> int)'
@@ -569,7 +574,7 @@ def test_checked():
     
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
-    
+    from LET_ast_node import Int_Type,Proc_Type,Bool_Type
     get_answer = lambda prog: type_of_prog(type_of_prog(prog))
     
     prog = '''\
