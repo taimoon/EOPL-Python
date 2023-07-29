@@ -28,6 +28,7 @@ def obj_repr():
     assert(env.apply('x') == 7)
     assert(env.apply('y') == 8)
     print(env)
+
 def procedural_repr():
     def empty_env():
         def fn(var):
@@ -50,6 +51,7 @@ def procedural_repr():
     assert(apply_env(env,'x') == 7)
     assert(apply_env(env,'y') == 8)
     print(env)
+
 def data_struct_repr():
     def empty_env():
         return ['empty-env']

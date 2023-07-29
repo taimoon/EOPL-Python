@@ -308,12 +308,15 @@ class Bool_Type:
 @dataclass
 class Proc_Type:
     arg_type:tuple
-    result_type:typing.Any
+    res_type:typing.Any
     def __str__(self) -> str:
-        res_t_str = self.result_type.__str__()
+        res_t_str = self.res_type.__str__()
         arg_t_str = ' * '.join(str(t) for t in self.arg_type)
         out = f'({arg_t_str} -> {res_t_str})'
         return out
+    @property
+    def result_type(self): 
+        raise DeprecationWarning
 
 @dataclass
 class Void_Type:

@@ -1,18 +1,19 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import *
+from LET import expand_let_star,expand_conditional
 
 def check_equal_type(t1,t2,exp):
     if t1 != t2:
         raise Exception(f"Type didn't match [{t1}] [{t2}] [{exp}]")
 
 
-def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
+def type_of_prog(prog,env = init_tenv(),parse = parser.parse):
     prog = parse(prog)
     if isinstance(prog,Program):
         return type_of(prog.expr,add_modules_to_tenv(prog.modules,env))
     else:
-        return type_of(prog, env)
+        return type_of(prog,env)
 
 
 def type_of(expr, env):
@@ -27,14 +28,14 @@ def type_of(expr, env):
     elif isinstance(expr, Const_Exp):
         return Int_Type()
     elif isinstance(expr, Var_Exp):
-        return apply_env(env, expr.var)  
+        return apply_env(env,expr.var)
     elif isinstance(expr, Diff_Exp):
         check_equal_type(type_of(expr.left,env),Int_Type(),expr.left)
         check_equal_type(type_of(expr.right,env),Int_Type(),expr.right)
         return Int_Type()
     elif isinstance(expr, Zero_Test_Exp):
         check_equal_type(type_of(expr.exp,env),Int_Type(),expr.exp)
-        return Bool_Type
+        return Bool_Type()
     elif isinstance(expr, Branch):
         check_equal_type(type_of(expr.pred,env), Bool_Type(),expr.pred)
         t1 = type_of(expr.conseq,env)
@@ -43,18 +44,19 @@ def type_of(expr, env):
         return t1
     elif isinstance(expr, Proc_Exp): # TODO - move expand_types
         ext_env = extend_env_from_pairs(expr.params, expand_types(expr.types,env), env)
-        res_t = type_of(expr.body,ext_env)
-        return Proc_Type(expand_types(expr.types,env),
-                         result_type=res_t)
+        arg_type = expand_types(expr.types,env)
+        res_type = type_of(expr.body,ext_env)
+        return Proc_Type(arg_type,res_type)
     elif isinstance(expr, App_Exp):
         proc_t = type_of(expr.operator,env)
         if not isinstance(proc_t,Proc_Type):
             raise Exception(f"Operator is not a procedure type {proc_t} {expr.operator}")
-        arg_types = tuple(map(lambda exp: type_of(exp,env),expr.operand))
+        
+        arg_types = tuple(type_of(exp,env) for exp in expr.operand)
         for param_t,arg_t in zip(proc_t.arg_type,arg_types):
             check_equal_type(param_t,arg_t,expr)
         
-        return proc_t.result_type
+        return proc_t.res_type
     elif isinstance(expr, Rec_Proc):
         return type_of(expr.expr,rec_proc_to_tenv(expr,env))
     elif isinstance(expr,Pair_Exp):
@@ -75,7 +77,7 @@ def type_of(expr, env):
         env = extend_env(expr.right,expand_type(t.t1,env),env)
         return type_of(expr.expr,env)
     elif isinstance(expr,List):
-        types = tuple(map(lambda exp: type_of(exp,env), expr.exps))
+        types = tuple(type_of(exp,env) for exp in expr.exps)
         t0 = types[0]
         for t in types[1:]:
             check_equal_type(t0,t,expr)
@@ -93,9 +95,7 @@ def type_of(expr, env):
     elif isinstance(expr,NewRef):
         return Void_Type()
     elif isinstance(expr,DeRef):
-        t = type_of(expr.expr,env)
-        check_equal_type(t,Int_Type(),expr.expr)
-        return No_Type()
+        raise NotImplementedError
     elif isinstance(expr,SetRef):
         ref_t = type_of(expr.loc,env)
         check_equal_type(ref_t,Int_Type(),expr.loc)
@@ -107,16 +107,7 @@ def type_of(expr, env):
     elif isinstance(expr,Let_Star_Exp):
         return type_of(expand_let_star(expr),env)
     elif isinstance(expr,Conditional):
-        def expand(clauses:tuple[Clause]):
-            if clauses[1:] == ():
-                if expr.otherwise is not None:
-                    return Branch(clauses[0].pred,clauses[0].conseq,expr.otherwise)
-                else:
-                    false_val = Zero_Test_Exp(Const_Exp(1))
-                    return Branch(clauses[0].pred,clauses[0].conseq,false_val)
-            else:
-                return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
-        return type_of(expand(expr.clauses),env)
+        return type_of(expand_conditional(expr.clauses,expr.otherwise),env)
     elif isinstance(expr, Primitive_Exp):
         if expr.op == 'car':
             t = type_of(expr.exps[0],env)
@@ -136,14 +127,6 @@ def type_of(expr, env):
                                 ),env)
     else:
         raise Exception("Unknown CHECKED expression type", expr)
-
-def expand_let_star(exp:Let_Star_Exp):
-    def recur(vars,exps):
-        if vars == ():
-            return exp.body
-        else:
-            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
-    return recur(exp.vars,exp.exps)
 
 def rec_proc_to_tenv(exp:Rec_Proc,tenv:Environment) -> Environment:
     for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
@@ -264,7 +247,7 @@ def interface_comp(actual,expected,tenv) -> bool:
 def rename_type(type,name,new_name):
     if isinstance(type,Proc_Type):
         arg_type = tuple(rename_type(arg_t,name,new_name) for arg_t in type.arg_type)
-        res_type = rename_type(type.result_type,name,new_name)
+        res_type = rename_type(type.res_type,name,new_name)
         return Proc_Type(arg_type,res_type)
     elif isinstance(type,Qualified_Type):
         new_name = new_name if type.module_name == name else name
@@ -344,7 +327,7 @@ def expand_type(type,tenv:Environment):
     elif isinstance(type,Proc_Type):
         return Proc_Type(
             tuple(expand_type(arg_t,tenv) for arg_t in type.arg_type),
-            expand_type(type.result_type,tenv)
+            expand_type(type.res_type,tenv)
         )
     elif isinstance(type,Named_Type):
         return lookup_type_name(type.name,tenv)

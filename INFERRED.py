@@ -34,7 +34,7 @@ def apply_one_subst(t0,tvar:Var_Type,t1):
     elif isinstance(t0, Proc_Type):
         return Proc_Type(
             tuple(apply_one_subst(arg_t,tvar,t1) for arg_t in t0.arg_type),
-            apply_one_subst(t0.result_type,tvar,t1),
+            apply_one_subst(t0.res_type,tvar,t1),
         )
     elif isinstance(t0,Var_Type):
         return t1 if t0 == tvar else t0
@@ -49,7 +49,7 @@ def apply_subst_to_type(t,subst):
     elif isinstance(t, Proc_Type):
         return Proc_Type(
             tuple(apply_subst_to_type(arg_t,subst) for arg_t in t.arg_type),
-            apply_subst_to_type(t.result_type,subst),
+            apply_subst_to_type(t.res_type,subst),
         )
     elif isinstance(t,Var_Type):
         res = assoc(t,subst)
@@ -69,7 +69,7 @@ def no_occurrence(tvar:Var_Type,t) -> bool:
         return True
     elif isinstance(t,Proc_Type):
         f = lambda arg_t: no_occurrence(tvar,arg_t)
-        return all(map(f,t.arg_type)) and no_occurrence(tvar,t.result_type)
+        return all(map(f,t.arg_type)) and no_occurrence(tvar,t.res_type)
     elif isinstance(t,Var_Type):
         return t != tvar
     else:
@@ -92,7 +92,7 @@ def unifier(t1,t2,subst,expr):
         and isinstance(t2,Proc_Type):
         for arg_t1,arg_t2 in zip(t1.arg_type,t2.arg_type):
             subst = unifier(arg_t1,arg_t2,subst,expr)
-        subst = unifier(t1.result_type,t2.result_type,subst,expr)
+        subst = unifier(t1.res_type,t2.res_type,subst,expr)
         return subst
     else:
         raise Exception(f"Unification failure {t1} {t2} {expr}")
@@ -125,7 +125,7 @@ def lambda_alpha_subst(t_exp1,t_exp2,sym_tbl=None):
             arg_ts.append(ans.type)
             sym_tbl = ans.subst
         arg_ts = tuple(arg_ts)
-        ans = lambda_alpha_subst(t_exp1.result_type,t_exp2.result_type,sym_tbl)
+        ans = lambda_alpha_subst(t_exp1.res_type,t_exp2.res_type,sym_tbl)
         return Answer(Proc_Type(arg_ts,ans.type),ans.subst)
     elif isinstance(t_exp1,Var_Type) and isinstance(t_exp2,Var_Type):
         if t_exp1.var not in sym_tbl:
