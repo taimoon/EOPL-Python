@@ -1,5 +1,13 @@
 from dataclasses import dataclass
-from LET_ast_node import *
+from LET_ast_node import (
+    Pair,
+    NULL,
+    Decl_Type,
+    Proc_Type,Int_Type,Bool_Type,
+    Proc_Val,
+    Proc_Module,Proc_Interface,
+    Primitve_Implementation
+)
 
 # Object representation
 @dataclass

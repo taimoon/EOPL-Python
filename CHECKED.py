@@ -1,7 +1,18 @@
 from LET_ast_node import *
 from LET_parser import parser
-from LET_environment import *
 from LET import expand_let_star,expand_conditional
+from LET_environment import (
+    Environment,
+    init_tenv,
+    apply_env,
+    extend_env,
+    extend_env_from_pairs,
+    lookup_qualified_type,
+    extend_tenv_with_module,
+    lookup_module_tenv,
+    extend_env_with_module,
+    lookup_type_name,
+)
 
 def check_equal_type(t1,t2,exp):
     if t1 != t2:

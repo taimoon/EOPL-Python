@@ -451,7 +451,8 @@ def test_checked():
     from CHECKED import type_of_prog
     from LET import value_of_prog
     from LET_parser import type_parse as parse
-    from LET_ast_node import Pair,NULL,No_Type,Int_Type
+    from LET_ast_node import (Pair,NULL,No_Type,Int_Type)
+    
     prog = 'proc (x : int) -(x,1)'
     res = type_of_prog(prog)
     ans = '(int -> int)'
@@ -478,10 +479,11 @@ def test_checked():
     
     prog = '''\
     letrec int accumulator 
-            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) =
-        if less?(a,b)
-        then (accumulator op stepper f (stepper a) b (op acm (f a)))
-        else acm
+            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) 
+            =
+            if less?(a,b)
+            then (accumulator op stepper f (stepper a) b (op acm (f a)))
+            else acm
     in accumulator
     '''
     res = type_of_prog(prog)
@@ -490,16 +492,17 @@ def test_checked():
     assert(res == parse(ans))
     
     prog = '''\
-    letrec int accumulator 
-            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) =
-        if less?(a,b)
-        then (accumulator op stepper f (stepper a) b (op acm (f a)))
-        else acm
+    letrec int accumulator
+            (op:(int * int -> int),stepper:(int -> int),f:(int -> int),a:int,b:int,acm:int) 
+            =
+            if less?(a,b)
+            then (accumulator op stepper f (stepper a) b (op acm (f a)))
+            else acm
     in let*
         op = proc(x:int,y:int) +(x,y)
         stepper = proc(x:int) +(x,2)
         f = proc(x:int) *(x,x)
-        sum = proc (a:int,b:int) (accumulator op stepper f a b 0)
+        sum = proc(a:int,b:int) (accumulator op stepper f a b 0)
     in (sum 0 10)
     '''
     ans = sum(x*x for x in range(0,10,2))
@@ -563,14 +566,17 @@ def test_checked():
         = if zero?(x) then emptylist(int) else cons(x,(enumerate -(x,1)))
         listof int map (xs: listof int, f : (int -> int))
         = if null?(xs) then emptylist(int) else cons((f car(xs)), (map cdr(xs) f))
-    in newpair(enumerate,(enumerate 3))
+        int sqr (x:int) = *(x,x)
+    in newpair(enumerate,newpair((enumerate 3),(map (enumerate 3) sqr)))
     '''
-    ans = 'pairof (int -> listof int) * listof int'
+    ans = 'pairof (int -> listof int) * pairof listof int * listof int'
     res = type_of_prog(prog)
     assert(str(res) == ans)
     assert(res == parse(ans))
     val = Pair(3,Pair(2,Pair(1,NULL(t=Int_Type()))))
-    assert(value_of_prog(prog).cdr == val)
+    assert(value_of_prog(prog).cdr.car == val)
+    val = Pair(9,Pair(4,Pair(1,NULL(t=Int_Type()))))
+    assert(value_of_prog(prog).cdr.cdr == val)
     
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type

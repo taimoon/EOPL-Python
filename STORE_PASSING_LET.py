@@ -1,7 +1,13 @@
 from LET_parser import parser
-from LET_environment import *
+from LET_environment import (
+    init_env,
+    extend_env,
+    apply_env,
+    extend_env_rec_multi,
+)
 from memory import *
 from dataclasses import dataclass
+from LET_ast_node import *
 
 @dataclass
 class Store:
