@@ -453,7 +453,19 @@ def test_checked():
     from LET_parser import type_parse as parse
     from LET_ast_node import (Pair,NULL,No_Type,Int_Type)
     
-    prog = 'proc (x : int) -(x,1)'
+    prog = '-123'
+    res = type_of_prog(prog)
+    ans = 'int'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    
+    prog = '-(10,8)'
+    res = type_of_prog(prog)
+    ans = 'int'
+    assert(str(res) == ans)
+    assert(res == parse(ans))
+    
+    prog = 'proc (x : int) -(x,11)'
     res = type_of_prog(prog)
     ans = '(int -> int)'
     assert(str(res) == ans)
@@ -583,9 +595,7 @@ def test_inference():
     from LET_ast_node import Int_Type,Proc_Type,Bool_Type
     get_answer = lambda prog: type_of_prog(type_of_prog(prog))
     
-    prog = '''\
-    proc (f:?) (f 11)
-    '''
+    prog = 'proc (f:?) (f 11)'
     prog = get_answer(prog)
     v1 = Var_Type()
     ans = Proc_Type([Proc_Type([Int_Type()],v1)],v1)
@@ -596,16 +606,12 @@ def test_inference():
     assert(res is False)
     
     
-    prog = '''\
-    proc (x:?) zero?(x)
-    '''
+    prog = 'proc (x:?) zero?(x)'
     ans = Proc_Type((Int_Type(),),Bool_Type())
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
     
-    prog = '''\
-    proc (f:?) proc (x:?) -((f 3),(f x))
-    '''
+    prog = 'proc (f:?) proc (x:?) -((f 3),(f x))'
     proc_t = Proc_Type((Int_Type(),),Int_Type())
     ans = Proc_Type((proc_t,),proc_t)
     prog = get_answer(prog)
