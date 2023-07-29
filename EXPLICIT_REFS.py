@@ -1,7 +1,7 @@
 from LET_parser import parser
 from LET import Let_Interpreter
 from LET_environment import init_env
-from memory import *
+from memory import (init_store,setref,newref,deref)
 from LET_ast_node import *
 
 def value_of_prog(prog,env = init_env(),parse = parser.parse):
@@ -18,7 +18,6 @@ class EXPLICIT_REFS_Interpreter:
     
     def value_of(self,expr, env):
         value_of = self.value_of
-        apply_proc = self.apply_proc
         if isinstance(expr,Sequence):
             val = None
             for exp in expr.exps:

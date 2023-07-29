@@ -277,7 +277,7 @@ def test_typed_modules():
 
 def test_class_1():
     from LET_parser import parser
-    from IMPLICIT_REFS import value_of_prog
+    from CLASSES import value_of_prog
     import LET_ast_node as ast
     
     List = ast.Pair.list_to_pair
@@ -394,26 +394,48 @@ def test_class_1():
     res = value_of_prog(prog)
     expected =  List(101,102,101,999)
     assert(str(res) == str(expected))
+    
     prog = '''
     class c1 extends object
     method initialize () 1
-    method m1 () send self m2()
-    method m2 () 13
+    method m1 () 11
+    method m2 () send self m1()
+    class c2 extends c1
+    method m1 () 22
+    let o1 = new c1() o2 = new c2()
+    in list(send o1 m1(), send o2 m1(), send o2 m2())
+    '''
+    res = value_of_prog(prog)
+    expected =  List(11,22,22)
+    assert(str(res) == str(expected))
+    
+    cls = '''
+    class c1 extends object
+    method initialize () 1
+    method m1 () send self m2() % dynamic dispatch
+    method m2 () 13 
     class c2 extends c1
     method m1 () 22
     method m2 () 23
-    method m3 () super m1()
+    method m3 () super m1() % static dispatch
+    method m4 () super m2()
     class c3 extends c2
     method m1 () 32
     method m2 () 33
-    let o3 = new c3()
-    in send o3 m3()
+    method m5 () list(send self m1(), send self m2(), super m1(),super m2())
     '''
+    prog = f'{cls} let o3 = new c3() in send o3 m3()'
     assert(value_of_prog(prog) == 33)
+    prog = f'{cls} let o3 = new c3() in send o3 m4()'
+    assert(value_of_prog(prog) == 13)
+    prog = f'{cls} let o3 = new c3() in send o3 m5()'
+    res = value_of_prog(prog)
+    ans = List(32,33,22,23)
+    assert(str(res) == str(ans))
     
 def test_class_2():
     from LET_parser import parser
-    from IMPLICIT_REFS import value_of_prog
+    from CLASSES import value_of_prog
     import LET_ast_node as ast
     
     List = ast.Pair.list_to_pair

@@ -88,42 +88,8 @@ class IMPLICIT_REFS_Interpreter:
             if isinstance(res,Immutable):
                 raise Exception(f"error : attempt to modify immutable variable {expr.var}")
             setref(res,value_of(expr.expr,env))
-        # object
-        elif isinstance(expr,Self_Exp):
-            return apply_env(env,"%self")
-        elif isinstance(expr,Method_Call_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj:Object = value_of(expr.obj_exp,env)
-            meth = find_method(obj.class_name,expr.method_name)
-            apply_method = self.apply_method
-            return apply_method(meth,obj,args)
-        elif isinstance(expr,Super_Call_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj:Object = apply_env(env,'%self')
-            super_meth = find_method(apply_env(env,'%super'),expr.method_name)
-            apply_method = self.apply_method
-            return apply_method(super_meth,obj,args)
-        elif isinstance(expr,New_Obj_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj = new_object(expr.cls_name)
-            meth:Method = find_method(obj.class_name,'initialize')
-            apply_method = self.apply_method
-            apply_method(meth,obj,args)
-            return obj
         # derived form
         elif isinstance(expr,Letmutable_Exp):
             return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
         else:
             return EXPLICIT_REFS_Interpreter.value_of(self,expr,env)
-
-    def apply_method(intrep,meth:Method,self:Object,args:tuple):
-        change_init_env = intrep.change_init_env
-        init_env = intrep.init_env
-        value_of = intrep.value_of
-        from LET_environment import extend_env_from_pairs
-        env = change_init_env(init_env())
-        env = extend_env_from_pairs(meth.field_names,self.fields,env)
-        env = extend_env('%self',self,env)
-        env = extend_env('%super',meth.super_name,env)
-        env = extend_env_from_pairs(meth.vars,tuple(map(newref,args)),env)
-        return value_of(meth.body,env)
