@@ -1,8 +1,13 @@
 from LET_parser import parser
-from LET_environment import Environment,extend_env,apply_env,init_env
+from IMPLICIT_REFS import IMPLICIT_REFS_Interpreter
 from LET_ast_node import *
 from memory import *
-from IMPLICIT_REFS import IMPLICIT_REFS_Interpreter
+from LET_environment import (
+    Environment,
+    extend_env,
+    apply_env,
+    init_env,
+)
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
     return LAZY_Let_Interpreter().value_of_prog(prog,env,parse)

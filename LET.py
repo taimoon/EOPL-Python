@@ -1,8 +1,19 @@
-from LET_parser import parser
-from LET_environment import *
 from LET_ast_node import *
+from LET_parser import parser
+from LET_environment import (
+        Environment,
+        empty_env,
+        init_env,
+        apply_env,
+        extend_env,
+        extend_env_from_pairs,
+        extend_env_rec_multi,
+        lookup_qualified_var,
+        lookup_module_name,
+        extend_env_with_module,
+    )
 
-def value_of_prog(prog, env = init_env(), parse = parser.parse):
+def value_of_prog(prog,env = init_env(),parse = parser.parse):
     return Let_Interpreter().value_of_prog(prog,env,parse)
 
 def expand_let_star(expr:Let_Star_Exp):
@@ -13,6 +24,7 @@ def expand_let_star(expr:Let_Star_Exp):
             return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
     return recur(expr.vars,expr.exps)
 
+
 def expand_conditional(clauses:tuple[Clause],otherwise):
     expand = expand_conditional
     if clauses[1:] == ():
@@ -22,21 +34,21 @@ def expand_conditional(clauses:tuple[Clause],otherwise):
         return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:],otherwise))
                 
 class Let_Interpreter:
-    def value_of_prog(self,prog, env = init_env(), parse = parser.parse):
+    def value_of_prog(self,prog,env = init_env(),parse = parser.parse):
         value_of = self.value_of
         add_modules_to_env = self.add_modules_to_env
         prog = parse(prog)
         if isinstance(prog,Program):
             return value_of(prog.expr,add_modules_to_env(prog.modules,env))
         else:
-            return value_of(prog, env)
+            return value_of(prog,env)
     
     def apply_primitive(self,prim:Primitive_Exp,args):
         return prim.op(*args)
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args,env):
         if isinstance(proc,Primitve_Implementation):
-            return self.apply_primitive(proc,args)
+            return Let_Interpreter.apply_primitive(self,proc,args)
         else:
             env = extend_env_from_pairs(tuple(proc.params),tuple(args),env)
             return self.value_of(proc.body, env)
@@ -158,3 +170,5 @@ class Let_Interpreter:
             val = value_of(defs[0].expr,env)
             new_env = extend_env(var,val,env)
             return extend_env(var,val,recur(defs[1:],new_env))
+
+

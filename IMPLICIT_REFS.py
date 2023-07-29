@@ -1,7 +1,11 @@
 from LET_parser import parser
 from EXPLICIT_REFS import EXPLICIT_REFS_Interpreter
-from LET_environment import get_all_primitive_implementation
-from LET_environment import Environment,extend_env,extend_env_rec_ref,apply_env
+from LET_environment import (
+    Environment,
+    extend_env,
+    extend_env_rec_ref,
+    apply_env
+)
 from LET_ast_node import *
 from memory import *
 from object import *
@@ -23,8 +27,9 @@ def value_of_prog(prog, env = None, parse = parser.parse):
 class IMPLICIT_REFS_Interpreter:
     def init_env(self):
         from LET_environment import init_env
+        from LET_environment import get_all_primitive_implementation
         corspd = get_all_primitive_implementation()
-        corspd['cons'] = lambda x,y: Mutable_Pair(x,y)
+        corspd['cons'] = Mutable_Pair
         corspd['setcar'] = lambda p,v: p.setcar(v)
         corspd['setcdr'] = lambda p,v: p.setcdr(v)
         corspd['list'] = Mutable_Pair.list_to_pair

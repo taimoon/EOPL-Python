@@ -1,7 +1,18 @@
 from LET_parser import parser
-from LET_environment import *
 from LET_ast_node import *
-from LET import Let_Interpreter as Let_Interpreter
+from LET_environment import (
+    Environment,
+    init_env,
+    empty_senv,
+    empty_nameless_env,
+    apply_senv,
+    apply_nameless_env,
+    extend_nameless_env,
+    extend_senv,
+    extend_senv_vars
+)
+
+from LET import Let_Interpreter
 
 def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
     return Nameless_Let_Interpreter().value_of_prog(prog,env,parse)
@@ -80,7 +91,6 @@ class Nameless_Let_Interpreter:
         # so that it can use the same test cases used by other LET variants.
         # the test cases use ordinary environment
         # the code below is to translate that env to static env and nameless env accordingly
-        value_of = self.value_of
         senv = empty_senv()
         nameless_env = empty_nameless_env()
         if isinstance(env,Environment):
@@ -88,7 +98,8 @@ class Nameless_Let_Interpreter:
                 senv = extend_senv(var,senv)
                 nameless_env = extend_nameless_env(val,nameless_env)
         nameless_prog = translation_of(parse(prog),senv)
-        return value_of(nameless_prog, nameless_env)
+        return self.value_of(nameless_prog, nameless_env)
+    
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
         if isinstance(proc,Primitve_Implementation):
             return proc.op(*args)
@@ -127,4 +138,3 @@ class Nameless_Let_Interpreter:
             return apply_proc(proc,args)
         else:
             return Let_Interpreter.value_of(self,expr,nameless_env)
-            # raise Exception("Uknown NAMELESS-LET expression type", expr)
