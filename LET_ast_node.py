@@ -295,6 +295,8 @@ class Thunk:
     expr:typing.Any
     env:typing.Any
 
+
+# TYPE
 @dataclass
 class Int_Type:
     def __str__(self) -> str:
@@ -308,12 +310,15 @@ class Bool_Type:
 @dataclass
 class Proc_Type:
     arg_type:tuple
-    result_type:typing.Any
+    res_type:typing.Any
     def __str__(self) -> str:
-        res_t_str = self.result_type.__str__()
+        res_t_str = self.res_type.__str__()
         arg_t_str = ' * '.join(str(t) for t in self.arg_type)
         out = f'({arg_t_str} -> {res_t_str})'
         return out
+    @property
+    def result_type(self): 
+        raise DeprecationWarning
 
 @dataclass
 class Void_Type:
@@ -331,6 +336,7 @@ class Pair_Type:
     t1:typing.Any
     def __str__(self) -> str:
         return f'pairof {self.t0} * {self.t1}'
+
 @dataclass
 class List_Type:
     t:typing.Any
@@ -346,7 +352,8 @@ class Qualified_Type:
 class Named_Type:
     name:str
 
-# module
+
+# MODULE
 @dataclass
 class Var_Def:
     name:str
@@ -417,6 +424,7 @@ class App_Module_Body:
 
 Module_Body_T  = tuple[Var_Def|Type_Def]|Proc_Module_Body|Var_Module_Body|App_Module_Body
 
+# CLASS
 @dataclass
 class Method_Decl:
     name:str
@@ -455,3 +463,8 @@ class Super_Call_Exp:
 @dataclass
 class Self_Exp:
     pass
+
+@dataclass
+class Instance_Exp:
+    exp:None
+    cls_name:str

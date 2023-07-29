@@ -10,7 +10,7 @@ class Object:
 @dataclass
 class Method:
     'interpreter data struct'
-    vars:tuple[str]
+    params:tuple[str]
     body:None
     super_name:str
     field_names:tuple[str]
@@ -43,6 +43,11 @@ class Class_Env:
     
 the_class_env = Class_Env()
 
+def init_class_env(decls:tuple[ast.Class_Decl]):
+    the_class_env.add_class('object',Class(None,(),[]))
+    for decl in decls:
+        add_class_decl(decl)
+
 def add_to_class_env(name:str,cls:Class):
     the_class_env.add_class(name,cls)
 
@@ -59,11 +64,6 @@ def add_class_decl(decl:ast.Class_Decl) -> None:
     )
     cls = Class(decl.parent,field_names,method_env)
     add_to_class_env(decl.name,cls)
-
-def init_class_env(decls:tuple[ast.Class_Decl]):
-    the_class_env.add_class('object',Class(None,(),[]))
-    for decl in decls:
-        add_class_decl(decl)
 
 from itertools import count
 new_id = count()
@@ -94,6 +94,7 @@ def find_method(cls_name:str,name:str) -> Method:
 def new_object(cls_name:str):
     from memory import newref
     field_names = lookup_class(cls_name).field_names
+    # the val passed to newref can be any
     res = Object(cls_name,[newref(['%uninitialized',name]) for name in field_names])
     return res
 

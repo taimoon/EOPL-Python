@@ -1,5 +1,13 @@
 from dataclasses import dataclass
-from LET_ast_node import *
+from LET_ast_node import (
+    Pair,
+    NULL,
+    Decl_Type,
+    Proc_Type,Int_Type,Bool_Type,
+    Proc_Val,
+    Proc_Module,Proc_Interface,
+    Primitve_Implementation
+)
 
 # Object representation
 @dataclass
@@ -201,6 +209,15 @@ def extend_nameless_env(val,env):
 
 def apply_nameless_env(env,addr):
     return env[addr]
+
+def extend_tenv(var,type,tenv:Environment):
+    return extend_env(var,type,tenv)
+
+def apply_tenv(tenv:Environment,var):
+    return apply_env(tenv,var)
+
+def extend_tenv_from_pairs(vars,types,tenv:Environment):
+    return extend_env_from_pairs(vars,types,tenv)
 
 class Repeated_Module_Error(Exception): pass
 

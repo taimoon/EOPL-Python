@@ -68,6 +68,7 @@ reserved = {
    'self' : 'SELF',
    'extends' : 'EXTENDS',
    'field' : 'FIELD',
+   'instanceof':'INSTANCEOF',
    
 }
 

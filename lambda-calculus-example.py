@@ -1,4 +1,3 @@
-# from self_repr_ import Self_Repr
 from list_parser import *
 @dataclass
 class Var_Exp:
