@@ -610,6 +610,7 @@ def p_class_other(p):
     expr : NEW ID '(' list_opt ')'
         | SEND expr ID '(' list_opt ')'
         | SUPER ID '(' list_opt ')'
+        | INSTANCEOF expr ID 
         | SELF
     '''
     match tuple(p[1:]):
@@ -619,6 +620,8 @@ def p_class_other(p):
             p[0] = Method_Call_Exp(expr,method_name,exps)
         case ('super',method_name,'(',exps,')'):
             p[0] = Super_Call_Exp(method_name,exps)
+        case ('instanceof',expr,cls_name):
+            p[0] = Instance_Exp(expr,cls_name)
         case ('self',):
             p[0] = Self_Exp()
         case _:

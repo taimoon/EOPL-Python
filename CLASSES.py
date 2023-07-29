@@ -62,6 +62,12 @@ class CLASSES_Interpreter:
             meth:Method = find_method(obj.class_name,'initialize')
             self.apply_method(meth,obj,args)
             return obj
+        elif isinstance(expr,Instance_Exp):
+            obj = value_of(expr.exp,env)
+            if isinstance(obj,Object):
+                return obj.class_name == expr.cls_name
+            else:
+                return False
         else:
             return IMPLICIT_REFS_Interpreter.value_of(self,expr,env)
 

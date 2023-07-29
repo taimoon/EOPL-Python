@@ -475,11 +475,13 @@ def test_class_2():
         setref(res_ptr,cons(send q dequeue(),deref(res_ptr)));
         setref(res_ptr,cons(send q dequeue(),deref(res_ptr)));
         setref(res_ptr,cons(send q dequeue(),deref(res_ptr)));
+        setref(res_ptr,cons(instanceof q Queue,deref(res_ptr)));
+        setref(res_ptr,cons(instanceof 1 Queue,deref(res_ptr)));
         deref(res_ptr)
     end
     '''
     res = value_of_prog(prog)
-    expected = List(5,3,2)
+    expected = List(False,True,5,3,2)
     assert(str(res) == str(expected))
 
 if __name__ == '__main__':

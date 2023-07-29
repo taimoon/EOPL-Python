@@ -463,3 +463,8 @@ class Super_Call_Exp:
 @dataclass
 class Self_Exp:
     pass
+
+@dataclass
+class Instance_Exp:
+    exp:None
+    cls_name:str
