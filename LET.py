@@ -5,7 +5,6 @@ from LET_environment import (
         empty_env,
         init_env,
         apply_env,
-        extend_env,
         extend_env_from_pairs,
         extend_env_rec_multi,
         lookup_qualified_var,
@@ -85,8 +84,9 @@ class Let_Interpreter:
             return value_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env)
         elif isinstance(expr,Unpair_Exp):
             pair:Pair = value_of(expr.pair_exp,env)
-            env = extend_env(expr.left,pair.car,env)
-            env = extend_env(expr.right,pair.cdr,env)
+            vals = pair.car,pair.cdr
+            vars = expr.left,expr.right
+            env = extend_env_from_pairs(vars,vals,env)
             return value_of(expr.expr,env)
         elif isinstance(expr,Qualified_Var_Exp):
             return lookup_qualified_var(expr.module_name,expr.var_name,env)
@@ -168,7 +168,7 @@ class Let_Interpreter:
         else:
             var = defs[0].name
             val = value_of(defs[0].expr,env)
-            new_env = extend_env(var,val,env)
-            return extend_env(var,val,recur(defs[1:],new_env))
+            new_env = extend_env_from_pairs((var,),(val,),env)
+            return extend_env_from_pairs((var,),(val,),recur(defs[1:],new_env))
 
 

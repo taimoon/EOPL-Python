@@ -2,9 +2,9 @@ from LET_parser import parser
 from EXPLICIT_REFS import EXPLICIT_REFS_Interpreter
 from LET_environment import (
     Environment,
-    extend_env,
     extend_env_rec_ref,
-    apply_env
+    apply_env,
+    extend_env_from_pairs,
 )
 from LET_ast_node import *
 from memory import *
@@ -36,13 +36,14 @@ class IMPLICIT_REFS_Interpreter:
 
         return init_env(corspd)
 
-    def change_init_env(self,env):
+    def change_init_env(self,env:Environment):
         from LET_environment import empty_env
-        # another day, another workaround
         new_env = empty_env()
-        for var,val in env.env:
-            new_env = extend_env(var,newref(val),new_env)
+        for e in env:
+            e = {var:newref(val) for var,val in e}
+            new_env = new_env.extend_from_dict(e)
         return new_env
+        
 
     def value_of_prog(self,prog, env = None, parse = parser.parse):
         prog = parse(prog)
@@ -55,8 +56,10 @@ class IMPLICIT_REFS_Interpreter:
     def apply_proc(self,proc:Proc_Val,args,env:Environment):
         if isinstance(proc, Primitve_Implementation):
             return proc.op(*args)
-        for param,arg in zip(proc.params,args):
-            env = extend_env(param,newref(arg),env)
+        # for param,arg in zip(proc.params,args):
+        #     env = extend_env(param,newref(arg),env)
+        vals = tuple(newref(arg) for arg in args)
+        env = extend_env_from_pairs(proc.params,vals,env)
         return self.value_of(proc.body, env)
 
     def value_of(self,expr, env):
@@ -71,11 +74,9 @@ class IMPLICIT_REFS_Interpreter:
             return value_of(expr.expr, extend_env_rec_ref(expr.var,expr.params,expr.body,env))
         elif isinstance(expr,Let_Exp):
             # introduce immutability
-            new_env = env
-            for var,exp in zip(expr.vars,expr.exps):
-                val = value_of(exp,env)
-                new_env = extend_env(var,Immutable(val),new_env)
-            return value_of(expr.body,new_env)
+            vals = tuple(Immutable(value_of(exp,env)) for exp in expr.exps)
+            env = extend_env_from_pairs(expr.vars,vals,env)
+            return value_of(expr.body,env)
         # Statement
         elif isinstance(expr,Ref):
             if not isinstance(expr.var,Var_Exp):

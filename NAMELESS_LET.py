@@ -7,8 +7,7 @@ from LET_environment import (
     empty_nameless_env,
     apply_senv,
     apply_nameless_env,
-    extend_nameless_env,
-    extend_senv,
+    extend_nameless_env_vals,
     extend_senv_vars
 )
 
@@ -94,9 +93,11 @@ class Nameless_Let_Interpreter:
         senv = empty_senv()
         nameless_env = empty_nameless_env()
         if isinstance(env,Environment):
-            for var,val in env.env:
-                senv = extend_senv(var,senv)
-                nameless_env = extend_nameless_env(val,nameless_env)
+            for e in env:
+                vars = tuple(p[0] for p in e)
+                vals = tuple(p[1] for p in e)
+                senv = extend_senv_vars(vars,senv)
+                nameless_env = extend_nameless_env_vals(vals,nameless_env)
         nameless_prog = translation_of(parse(prog),senv)
         return self.value_of(nameless_prog, nameless_env)
     
@@ -104,20 +105,18 @@ class Nameless_Let_Interpreter:
         if isinstance(proc,Primitve_Implementation):
             return proc.op(*args)
         env = proc.env
-        for arg in args:
-            env = extend_nameless_env(arg,env)
+        env = extend_nameless_env_vals(args,env)
         return self.value_of(proc.body, env)
 
     def value_of(self,expr, nameless_env):
         value_of = self.value_of
         apply_proc = self.apply_proc
         if isinstance(expr, Nameless_Var_Exp):
-            return apply_nameless_env(nameless_env, expr.id)
+            depth,length = expr.id
+            return apply_nameless_env(nameless_env,depth,length)
         elif isinstance(expr,Nameless_Rec_Exp):
             vals = tuple(value_of(exp,nameless_env) for exp in expr.exps)
-            new_env = nameless_env
-            for val in vals: 
-                new_env = extend_nameless_env(val,new_env)
+            new_env =  extend_nameless_env_vals(vals,nameless_env)
             for val in vals: 
                 val.env = new_env
             return value_of(expr.body,new_env)
@@ -125,9 +124,8 @@ class Nameless_Let_Interpreter:
             return Proc_Val(None,expr.body,nameless_env)
         elif isinstance(expr,Nameless_Let_Exp):
             'deprecated as let expression can be derived'
-            new_env = nameless_env
-            for exp in expr.exps:
-                new_env = extend_nameless_env(value_of(exp,nameless_env),new_env)
+            vals = tuple(value_of(exp,nameless_env) for exp in expr.exps)
+            new_env = extend_nameless_env_vals(vals,nameless_env)
             return value_of(expr.body,new_env)
         elif isinstance(expr, App_Exp):
             proc = value_of(expr.operator,nameless_env)
@@ -135,6 +133,7 @@ class Nameless_Let_Interpreter:
                 args = value_of(expr.operand[0].list_expr,nameless_env)
             else:
                 args = map(lambda o : value_of(o, nameless_env), expr.operand)
+            args = tuple(args)
             return apply_proc(proc,args)
         else:
             return Let_Interpreter.value_of(self,expr,nameless_env)

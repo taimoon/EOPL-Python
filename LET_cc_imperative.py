@@ -52,8 +52,7 @@ def apply_proc_k():
         return apply_cont()
     
     env = proc.env
-    for param,arg in zip(proc.params,args):
-        env = extend_env(param,arg,env)
+    env = extend_env_from_pairs(proc.params,args,env)
     registers['env'] = env
     registers['expr'] = proc.body
     return value_of_k()

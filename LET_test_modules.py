@@ -42,7 +42,7 @@ def test_modules():
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 132)
     
-    from LET_environment import Repeated_Module_Error
+    from LET_environment import Repeated_Binding
     try:
         prog = '''\
         module m1
@@ -53,10 +53,11 @@ def test_modules():
         '''
         type_of_prog(prog)
         assert(False)
-    except Repeated_Module_Error:
-        print("Test Pass: Error is detected")
+    except Repeated_Binding:
+        print("Test Pass: Error is detected", Repeated_Binding)
         assert(True)
-    except:
+    except Exception as e:
+        print(e)
         assert(False)
     
     prog = '''\

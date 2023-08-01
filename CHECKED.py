@@ -5,7 +5,6 @@ from LET_environment import (
     Environment,
     init_tenv,
     apply_tenv,
-    extend_tenv,
     extend_tenv_from_pairs,
     lookup_qualified_type,
     extend_tenv_with_module,
@@ -83,8 +82,9 @@ def type_of(expr,tenv):
         t = type_of(expr.pair_exp,tenv)
         if not isinstance(t,Pair_Type):
             raise Exception(f"the expression is not pair for UNPAIR {expr}")
-        tenv = extend_tenv(expr.left,expand_type(t.t0,tenv),tenv)
-        tenv = extend_tenv(expr.right,expand_type(t.t1,tenv),tenv)
+        ts = expand_type(t.t0,tenv),expand_type(t.t1,tenv)
+        vars = expr.left,expr.right
+        tenv = extend_tenv_from_pairs(vars,ts,tenv)
         return type_of(expr.expr,tenv)
     elif isinstance(expr,List):
         types = tuple(type_of(exp,tenv) for exp in expr.exps)
@@ -139,8 +139,11 @@ def type_of(expr,tenv):
         raise Exception("Unknown CHECKED expression type", expr)
 
 def rec_proc_to_tenv(exp:Rec_Proc,tenv:Environment) -> Environment:
-    for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
-        tenv = extend_tenv(var,Proc_Type(arg_t,res_t),tenv)
+    vals = tuple(Proc_Type(arg_t,res_t) for arg_t,res_t in zip(exp.arg_types,exp.res_types))
+    vars = exp.var
+    tenv = extend_tenv_from_pairs(vars,vals,tenv)
+    # for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
+        # tenv = extend_tenv(var,Proc_Type(arg_t,res_t),tenv)
     
     for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
         body_t = type_of(body,extend_tenv_from_pairs(params,arg_t,tenv))
@@ -285,12 +288,13 @@ def defs_to_decls(defs:tuple[Def_Type],tenv:Environment) -> tuple[Decl_Type]:
     elif isinstance(defs[0],Var_Def):
         name = defs[0].name
         type = type_of(defs[0].expr,tenv)
-        new_tenv = extend_tenv(name,type,tenv)
+        new_tenv = extend_tenv_from_pairs((name,),(type,),tenv)
         decl = Var_Decl(name,type)
         return (decl,) + defs_to_decls(defs[1:],new_tenv)
     elif isinstance(defs[0],Type_Def):
         name,type = defs[0].name,defs[0].type
-        new_tenv = extend_tenv(name,expand_type(type,tenv),tenv)
+        type = expand_type(type,tenv)
+        new_tenv = extend_tenv_from_pairs((name,),(type,),tenv)
         decl = Transparent_Type_Decl(name,type)
         return (decl,) + defs_to_decls(defs[1:],new_tenv)
     else:
@@ -406,12 +410,12 @@ def expand_interface(module_name,decls:tuple[Decl_Type],tenv:Environment) -> tup
         return (decl,) + expand_interface(module_name,decls[1:],tenv) 
     elif isinstance(decls[0],Opaque_Type_Decl):
         expanded_type = Qualified_Type(module_name,decls[0].name)
-        new_tenv = extend_tenv(decls[0].name,expanded_type,tenv)
+        new_tenv = extend_tenv_from_pairs((decls[0].name,),(expanded_type,),tenv)
         decl = Transparent_Type_Decl(decls[0].name,expanded_type)
         return (decl,) + expand_interface(module_name,decls[1:],new_tenv)
     elif isinstance(decls[0],Transparent_Type_Decl):
         expanded_type = expand_type(decls[0].type,tenv)
-        new_tenv = extend_tenv(decls[0].name,expanded_type,tenv)
+        new_tenv = extend_tenv_from_pairs((decls[0].name,),(expanded_type,),tenv)
         decl = Transparent_Type_Decl(decls[0].name,expanded_type)
         return (decl,) + expand_interface(module_name,decls[1:],new_tenv)
     else:
@@ -423,8 +427,8 @@ def extend_tenv_with_decl(decl,tenv) -> Environment:
         return tenv
     elif isinstance(decl,Transparent_Type_Decl):
         expanded_type = expand_type(decl.type,tenv)
-        return extend_tenv(decl.name,expanded_type,tenv)
+        return extend_tenv_from_pairs((decl.name,),(expanded_type,),tenv)
     elif isinstance(decl,Opaque_Type_Decl):
         expanded_type = Qualified_Type("%uninitialized",decl.name)
-        return extend_tenv(decl.name,expanded_type,tenv)
+        return extend_tenv_from_pairs((decl.name,),(expanded_type,),tenv)
 

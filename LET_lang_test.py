@@ -593,6 +593,7 @@ def test_checked():
 def test_inference():
     from INFERRED import type_of_prog,lambda_alpha_subst,Var_Type
     from LET_ast_node import Int_Type,Proc_Type,Bool_Type
+    
     get_answer = lambda prog: type_of_prog(type_of_prog(prog))
     
     prog = 'proc (f:?) (f 11)'
@@ -616,6 +617,7 @@ def test_inference():
     ans = Proc_Type((proc_t,),proc_t)
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
+    
 
 def test_all(value_of_prog):
     test_env()

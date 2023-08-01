@@ -6,13 +6,14 @@ from LET_ast_node import (
     Proc_Type,Int_Type,Bool_Type,
     Proc_Val,
     Proc_Module,Proc_Interface,
-    Primitve_Implementation
+    Primitve_Implementation,
 )
 
 # Object representation
+class Repeated_Binding(Exception): pass
 @dataclass
 class Environment:
-    env:tuple = ()
+    env:tuple[dict[str]] = ()
     @dataclass
     class Rec_Proc:
         params:None
@@ -24,38 +25,89 @@ class Environment:
     class Nameless_Rec_Proc(Rec_Proc): pass
     
     def __str__(self) -> str:
-        return f'(env {str(tuple(p[0] for p in self.env))})'
+        return f'(env {str(tuple(p.keys() for p in self.env))})'
     
     def memory_mapping(self):
-        return {k:(v if isinstance(v,int) else type(v).__name__) for k,v in self.env}
-
-    def extend(self,var,val):
-        pair = (var,val)
-        return Environment((pair,) + self.env) # the order here is important
+        return tuple({k:(v if isinstance(v,int) else type(v).__name__) for k,v in env.items()} for env in self.env)
     
-    def apply(self,src_var):
-        for var,val in self.env:
-            if var != src_var:
-                continue
-            if isinstance(val,self.Delayed_Rec_Proc):
-                return Proc_Val(val.params,val.body,val.delayed_env())
-            elif isinstance(val,self.Referenced_Rec_Proc):
-                from memory import newref
-                # also work but not test cases to show it doesn't work
-                # newref(Proc_Val(val.params,val.body,self)) 
-                # either I must write a test to test the lexical scoping
-                # nevertheless, the program still capture the closure.
-                return newref(Proc_Val(val.params,val.body,val.delayed_env()))
-            else:
-                return val
-        raise Exception("Unbound variable",src_var,str(self))
+    def copy(self):
+        env = tuple(dict(e.items()) for e in self.env)
+        return Environment(env)
     
-    def apply_senv(self,src_var):
-        for lex_addr,(var,_) in enumerate(self.env):
-            if var != src_var: continue
-            return lex_addr
-        raise Exception("Unbound variable",src_var,f"env - {self.env}")
-
+    def is_empty(self): return self.env == ()
+    
+    @property
+    def current_frame(self): return self.env[0]
+    
+    @property
+    def enclosed_env(self): return Environment(self.env[1:])
+    
+    def lookup(self,var:str):
+        if self.is_empty():
+            raise NameError
+        elif var not in self.current_frame:
+            return self.enclosed_env.lookup(var)
+        else:
+            return self.current_frame[var]
+    
+    def add_var(self,var,val):
+        env = self.copy()
+        if var not in self.current_frame:
+            env.current_frame[var] = val
+            return env
+        else:
+            raise Repeated_Binding
+    
+    def extend_env(self,env:dict):
+        return Environment(env.env + self.env)
+    
+    def extend_from_dict(self,d:dict):
+        return self.extend_env(Environment((d,)))
+    
+    def extend_from_bindings(self,pairs):
+        d = {}
+        for var,val in pairs:
+            if var in d: continue
+            d[var] = val
+        return self.extend_from_dict(d)
+    
+    def extend_from_pairs(self,vars,vals):
+        return self.extend_from_bindings(zip(vars,vals))
+    
+    def extend(self,*args,**kwargs):
+        raise DeprecationWarning
+    
+    def map(self,f):
+        env = tuple({k:f(v) for k,v in env.items()} for env in self.env)
+        return Environment(env)
+    
+    def __iter__(self): # TODO : WORKAROUND
+        return iter(e.items() for e in self.env)
+    
+    def apply(self,var):
+        val = self.lookup(var)
+        if isinstance(val,self.Delayed_Rec_Proc):
+            return Proc_Val(val.params,val.body,val.delayed_env())
+        elif isinstance(val,self.Referenced_Rec_Proc):
+            from memory import newref
+            # also work but not test cases to show it doesn't work
+            # newref(Proc_Val(val.params,val.body,self)) 
+            # either I must write a test to test the lexical scoping
+            # nevertheless, the program still capture the closure.
+            return newref(Proc_Val(val.params,val.body,val.delayed_env()))
+        else:
+            return val
+    
+    def apply_senv(self,src_var,depth=0):
+        recur = self.enclosed_env.apply_senv
+        if self.is_empty():
+            raise NameError
+        elif src_var not in self.current_frame:
+            return recur(src_var,depth+1)
+        else:
+            len = self.current_frame[src_var]
+            return depth,len
+        
     def extend_rec(self,var,params,body):
         delayed_fn = lambda:self.extend_rec(var,params,body)
         val = self.Delayed_Rec_Proc(params,body,delayed_fn)
@@ -63,44 +115,31 @@ class Environment:
 
     def extend_env_rec_multi(self,vars,paramss,bodys):
         # don't nest delayed_fn into recur
-        delayed_fn = lambda:self.extend_env_rec_multi(vars,paramss,bodys) 
-        env = self
-        for var,params,body in zip(vars,paramss,bodys):
-            val = self.Delayed_Rec_Proc(params,body,delayed_fn)
-            env = env.extend(var,val)
-        return env
+        delayed_fn = lambda:self.extend_env_rec_multi(vars,paramss,bodys)
+        Rec_Proc_Ctor = lambda params,body:self.Delayed_Rec_Proc(params,body,delayed_fn)
+        vals = tuple(Rec_Proc_Ctor(params,body) for params,body in zip(paramss,bodys))
+        return self.extend_from_pairs(vars,vals)
 
     def extend_env_rec_ref(self,vars,paramss,bodys):
         delayed_fn = lambda:self.extend_env_rec_ref(vars,paramss,bodys)
-        env = self
-        for var,params,body in zip(vars,paramss,bodys):
-            val = self.Referenced_Rec_Proc(params,body,delayed_fn)
-            env = env.extend(var,val)
-        return env
+        Rec_Proc_Ctor = lambda params,body:self.Referenced_Rec_Proc(params,body,delayed_fn)
+        vals = tuple(Rec_Proc_Ctor(params,body) for params,body in zip(paramss,bodys))
+        return self.extend_from_pairs(vars,vals)
     
     def lookup_module(self,name):
-        for var,val in self.env:
-            if var != name:
-                continue
-            elif not isinstance(val,Environment|Proc_Module):
-                continue
-            else:
-                return val
-        raise Exception("Unbound modules",name, self.__str__())
+        val = self.lookup(name)
+        assert(isinstance(val,Environment|Proc_Module))
+        return val
     
     def lookup_qualified_var(self,name,var):
         env = self.lookup_module(name)
         return env.apply(var)
     
     def lookup_module_tenv(self,name):
-        for var,val in self.env:
-            if var != name:
-                continue
-            elif not isinstance(val, Proc_Interface) and not (isinstance(val,tuple) and isinstance(val[0],Decl_Type)):
-                continue
-            else:
-                return val
-        raise Exception("Unbound modules",name, self.__str__())
+        val = self.lookup(name)
+        res = isinstance(val, Proc_Interface) or (isinstance(val,tuple) and isinstance(val[0],Decl_Type))
+        assert(res)
+        return val
     
     def lookup_qualified_var_tenv(self,module_name,name):
         decls = self.lookup_module_tenv(module_name)
@@ -115,15 +154,8 @@ class Environment:
 def empty_env():
     return Environment()
 
-def extend_env(var,val,env:Environment):
-    return env.extend(var,val)
-
 def extend_env_from_pairs(vars:tuple,vals:tuple,env:Environment = None):
-    if vars == ():
-        return empty_env() if env is None else env
-    else:
-        return extend_env(vars[0],vals[0],
-                          extend_env_from_pairs(vars[1:],vals[1:],env))
+    return env.extend_from_pairs(vars,vals)
 
 def extend_env_rec(var,params,body,env:Environment):
     return env.extend_rec(var,params,body)
@@ -148,10 +180,7 @@ def init_tenv():
               'zero?'   : Proc_Type((Int_Type(),),Bool_Type()),
               'minus'   : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
             }
-    env = empty_env()
-    for var,val in corspd.items():
-        env = extend_env(var,val,env)
-    return env
+    return empty_env().extend_from_dict(corspd)
 
 def get_all_primitive_implementation():
     # rather than using nameless lambda, because these print names
@@ -180,20 +209,15 @@ def get_all_primitive_implementation():
     return corspd
 
 def init_env(corspd=get_all_primitive_implementation()):
-    env = empty_env()
-    for var,val in corspd.items():
-        env = extend_env(var,Primitve_Implementation(val),env)
-    return env
+    corspd = {name:Primitve_Implementation(f) for name,f in corspd.items()}
+    return Environment((corspd,))
 
 def empty_senv():
     return Environment()
 
-def extend_senv(var,env:Environment):
-    return env.extend(var,None)
-
 def extend_senv_vars(vars,env:Environment):
-    for var in vars: env = extend_senv(var,env)
-    return env
+    pairs = tuple((v,i) for i,v in enumerate(vars))
+    return env.extend_from_bindings(pairs)
 
 def apply_senv(env:Environment,src_var):
     return env.apply_senv(src_var)
@@ -204,14 +228,11 @@ def is_nameless_env(env):
 def empty_nameless_env():
     return tuple()
 
-def extend_nameless_env(val,env):
-    return (val,) + env
+def extend_nameless_env_vals(vals:tuple,env:tuple):
+    return (vals,) + env
 
-def apply_nameless_env(env,addr):
-    return env[addr]
-
-def extend_tenv(var,type,tenv:Environment):
-    return extend_env(var,type,tenv)
+def apply_nameless_env(env,depth,length):
+    return env[depth][length]
 
 def apply_tenv(tenv:Environment,var):
     return apply_env(tenv,var)
@@ -219,17 +240,8 @@ def apply_tenv(tenv:Environment,var):
 def extend_tenv_from_pairs(vars,types,tenv:Environment):
     return extend_env_from_pairs(vars,types,tenv)
 
-class Repeated_Module_Error(Exception): pass
-
 def extend_env_with_module(module_name,bindings:Environment,env:Environment):
-    try:
-        env.lookup_module(module_name,env)
-        raise Repeated_Module_Error
-    except Repeated_Module_Error:
-        raise Repeated_Module_Error(f"Repeated module name of '{module_name}' in {env}")
-    except Exception as e:
-        pass
-    return extend_env(module_name,bindings,env)
+    return env.add_var(module_name,bindings)
 
 def lookup_module_name(name,env:Environment):
     return env.lookup_module(name)
@@ -247,14 +259,7 @@ def lookup_module_tenv(module_name,tenv:Environment):
     return tenv.lookup_module_tenv(module_name)
 
 def extend_tenv_with_module(module_name,interface:tuple[Decl_Type],tenv:Environment):
-    try:
-        lookup_module_tenv(module_name,tenv)
-        raise Repeated_Module_Error
-    except Repeated_Module_Error:
-        raise Repeated_Module_Error(f"Repeated module name of '{module_name}' in {tenv}")
-    except Exception as e: # TODO : Bad Practice, remove it in future
-        pass
-    return extend_env(module_name,interface,tenv)
+    return tenv.add_var(module_name,interface)
 
 def lookup_qualified_var_tenv(module_name,name,tenv:Environment):
     return tenv.lookup_qualified_var_tenv(module_name,name)

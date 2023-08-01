@@ -238,7 +238,7 @@ class Unpack_Exp:
 @dataclass
 class Nameless_Var_Exp:
     'nameless LET data structure'
-    id:int
+    id:int|tuple[int,int]
 
 @dataclass
 class Nameless_Proc_Exp:

@@ -59,6 +59,7 @@ The programs require Python Lex-Yacc library to run. You may get the library fro
    ```
    (add 3 4)
    ```
-2. Specify and implement multi-arguments PROC_MODULES
-3. Complete Chapter 6 - Continuation Passing Style
-4. Complete Chapter 9 - Objects and Classes
+2. Add more test and bugfixes for INFERRED
+3. Specify and implement multi-arguments PROC_MODULES
+4. Complete Chapter 6 - Continuation Passing Style
+5. Complete Chapter 9 - Objects and Classes

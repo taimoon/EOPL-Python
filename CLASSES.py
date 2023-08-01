@@ -2,7 +2,6 @@ from LET_parser import parser
 from IMPLICIT_REFS import IMPLICIT_REFS_Interpreter
 from LET_environment import (
     Environment as Env,
-    extend_env,
     apply_env,
     extend_env_from_pairs
 )
@@ -78,8 +77,8 @@ class CLASSES_Interpreter:
         value_of = self.value_of
         
         env = change_init_env(init_env())
-        env = extend_env_from_pairs(meth.field_names,obj.fields,env)
-        env = extend_env('%self',obj,env)
-        env = extend_env('%super',meth.super_name,env)
+        vars = meth.field_names + ('%self','%super')
+        vals = obj.fields + (obj,meth.super_name)
+        env = extend_env_from_pairs(vars,vals,env)
         env = extend_env_from_pairs(meth.params,tuple(map(newref,args)),env)
         return value_of(meth.body,env)
