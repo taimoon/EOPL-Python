@@ -1,8 +1,6 @@
 # Essential of Programming Languages
 The programs require Python Lex-Yacc library to run. You may get the library from https://www.dabeaz.com/ply/.
 
-Currently, I'm stop working on it.
-
 # Note
 1. By convention,
    ```
