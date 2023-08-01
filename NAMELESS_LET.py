@@ -112,8 +112,7 @@ class Nameless_Let_Interpreter:
         value_of = self.value_of
         apply_proc = self.apply_proc
         if isinstance(expr, Nameless_Var_Exp):
-            depth,length = expr.id
-            return apply_nameless_env(nameless_env,depth,length)
+            return apply_nameless_env(nameless_env,expr.id)
         elif isinstance(expr,Nameless_Rec_Exp):
             vals = tuple(value_of(exp,nameless_env) for exp in expr.exps)
             new_env =  extend_nameless_env_vals(vals,nameless_env)
