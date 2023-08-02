@@ -48,16 +48,11 @@ class IMPLICIT_REFS_Interpreter:
     def value_of_prog(self,prog, env = None, parse = parser.parse):
         prog = parse(prog)
         init_store()
-        if isinstance(prog,Program):
-            init_class_env(prog.classes)
-            prog = prog.expr
         return self.value_of(prog, self.change_init_env(env))
 
     def apply_proc(self,proc:Proc_Val,args,env:Environment):
         if isinstance(proc, Primitve_Implementation):
             return proc.op(*args)
-        # for param,arg in zip(proc.params,args):
-        #     env = extend_env(param,newref(arg),env)
         vals = tuple(newref(arg) for arg in args)
         env = extend_env_from_pairs(proc.params,vals,env)
         return self.value_of(proc.body, env)

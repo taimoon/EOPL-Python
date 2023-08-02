@@ -485,9 +485,11 @@ def test_class_2():
     expected = List(False,True,5,3,2)
     assert(str(res) == str(expected))
 
-if __name__ == '__main__':
+def test_all():
     test_modules()
     test_typed_modules()
     test_class_1()
     test_class_2()
     
+if __name__ == '__main__':
+    test_all()

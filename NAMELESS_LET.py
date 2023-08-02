@@ -11,7 +11,11 @@ from LET_environment import (
     extend_senv_vars
 )
 
-from LET import Let_Interpreter
+from LET import (
+    Let_Interpreter,
+    expand_let_star,
+    expand_conditional,
+)
 
 def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
     return Nameless_Let_Interpreter().value_of_prog(prog,env,parse)
@@ -61,22 +65,9 @@ def translation_of(expr,static_env):
         exps = tuple(translation_of(exp,static_env) for exp in expr.exps)
         return Nameless_Let_Exp(exps,translation_of(expr.body,new_senv))
     elif isinstance(expr,Let_Star_Exp):
-        def expand(vars,exprs):
-            if vars == ():
-                return expr.body
-            else:
-                return Let_Exp((vars[0],),(exprs[0],),expand(vars[1:],exprs[1:]))
-        return translation_of(expand(expr.vars,expr.exps),static_env)
+        return translation_of(expand_let_star(expr),static_env)
     elif isinstance(expr,Conditional):
-        def expand(clauses:tuple[Clause]):
-            if clauses[1:] == ():
-                otherwise = expr.otherwise
-                if otherwise is None:
-                    otherwise = Zero_Test_Exp(Const_Exp(1))
-                return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
-            else:
-                return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
-        return translation_of(expand(expr.clauses),static_env)
+        return translation_of(expand_conditional(expr),static_env)
     elif isinstance(expr,Unpack_Exp):
         return translation_of(App_Exp(Proc_Exp(expr.vars,expr.expr),
                                       (Unpack_Exp(None,expr.list_expr,None),)),
@@ -103,10 +94,10 @@ class Nameless_Let_Interpreter:
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
         if isinstance(proc,Primitve_Implementation):
-            return proc.op(*args)
+            return Let_Interpreter.apply_primitive(self,proc,args)
         env = proc.env
         env = extend_nameless_env_vals(args,env)
-        return self.value_of(proc.body, env)
+        return self.value_of(proc.body,env)
 
     def value_of(self,expr, nameless_env):
         value_of = self.value_of

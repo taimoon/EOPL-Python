@@ -23,14 +23,16 @@ def expand_let_star(expr:Let_Star_Exp):
             return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
     return recur(expr.vars,expr.exps)
 
+def expand_conditional(expr:Conditional):
 
-def expand_conditional(clauses:tuple[Clause],otherwise):
-    expand = expand_conditional
-    if clauses[1:] == ():
-        otherwise = Zero_Test_Exp(Const_Exp(1)) if otherwise is None else otherwise
-        return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
-    else:
-        return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:],otherwise))
+    def expand(clauses:tuple[Clause],otherwise):
+        if clauses[1:] == ():
+            otherwise = Zero_Test_Exp(Const_Exp(1)) if otherwise is None else otherwise
+            return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
+        else:
+            return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:],otherwise))
+    
+    return expand(expr.clauses,expr.otherwise)
                 
 class Let_Interpreter:
     def value_of_prog(self,prog,env = init_env(),parse = parser.parse):
@@ -84,8 +86,8 @@ class Let_Interpreter:
             return value_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env)
         elif isinstance(expr,Unpair_Exp):
             pair:Pair = value_of(expr.pair_exp,env)
-            vals = pair.car,pair.cdr
             vars = expr.left,expr.right
+            vals = pair.car,pair.cdr
             env = extend_env_from_pairs(vars,vals,env)
             return value_of(expr.expr,env)
         elif isinstance(expr,Qualified_Var_Exp):
@@ -94,11 +96,11 @@ class Let_Interpreter:
         elif isinstance(expr,Let_Exp):
             # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
             # as derived form
-            return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
+            return value_of(App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps),env)
         elif isinstance(expr,Let_Star_Exp):
             return value_of(expand_let_star(expr),env)
         elif isinstance(expr,Conditional):
-            return value_of(expand_conditional(expr.clauses,expr.otherwise),env)
+            return value_of(expand_conditional(expr),env)
         elif isinstance(expr, Primitive_Exp):
             return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
         elif isinstance(expr,List):
@@ -170,5 +172,4 @@ class Let_Interpreter:
             val = value_of(defs[0].expr,env)
             new_env = extend_env_from_pairs((var,),(val,),env)
             return extend_env_from_pairs((var,),(val,),recur(defs[1:],new_env))
-
 

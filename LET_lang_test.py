@@ -619,7 +619,7 @@ def test_inference():
     assert(lambda_alpha_subst(prog,ans).type == prog)
     
 
-def test_all(value_of_prog):
+def test_all_by_variant(value_of_prog):
     test_env()
     test_diff_exp(value_of_prog)
     test_if(value_of_prog)
@@ -640,42 +640,45 @@ def test_all(value_of_prog):
     
     print('pass all test')
 
-if __name__ == '__main__':
+def test_all():
     from LET import value_of_prog
     print('LET')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     from NAMELESS_LET import value_of_prog
     print('NAMELESS_LET')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     from EXPLICIT_REFS import value_of_prog
     print('EXPLICIT_REFS')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     print('Store_Passing_Refs')
     from STORE_PASSING_LET import value_of_prog
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     from IMPLICIT_REFS import value_of_prog
     print('IMPLICIT_REFS')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     test_ref(value_of_prog)
     from LAZY_LET import value_of_prog
     print('LAZY_LET')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     test_ref(value_of_prog)
     test_swap(value_of_prog)
     test_laziness(value_of_prog)
     from LET_cc import value_of_prog 
     print('LET_cc')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     from LET_cc_imperative import value_of_prog 
     print('LET_cc_imperative')
-    test_all(value_of_prog)
+    test_all_by_variant(value_of_prog)
     print('test CHECKED.py')
     test_checked()
     print('end of test')
     print('test INFERENCE.py')
     test_inference()
     print('end of test')
+
+if __name__ == '__main__':
+    test_all()
