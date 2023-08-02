@@ -1,5 +1,5 @@
 if __name__ == '__main__':
-    from LET_lang_test import test_all
+    from test_let_lang import test_all
     test_all()
-    from LET_test_modules import test_all
+    from test_modules import test_all
     test_all()
