@@ -36,7 +36,9 @@ The programs require Python Lex-Yacc library to run. You may get the library fro
     It might be tempting to seperate expansion process from `value_of` function. The reason of not seperating these is that put all behaviour definition in the same function, even they are derived. This is to document these together.
     
     However, expansion has the problem that we cannot easily to know the expected behaviour of program from the expansions itself. This requires additional documentation.
-4. Interpreter Inheritance. Inspired by [IU Compiler Course - Essential of Compilation](https://github.com/IUCompilerCourse/Essentials-of-Compilation). The textbook wrote a section how OOP make the compiler extensible. Though there is workaround if you do not resolve to use OOP. Current implementation does not extend parent class but rather, forward instance to parent class by calling parent class method, and return back to previous class once done eval at parent class. This process is analogy to descend to parent class and ascend back to child class; isn't it mutual recursion?
+4. Interpreter Inheritance. Inspired by [IU Compiler Course - Essential of Compilation](https://github.com/IUCompilerCourse/Essentials-of-Compilation). The textbook wrote a section how OOP make the compiler extensible. Though there is workaround if you do not resolve to use OOP. The example is included at [./note/extensible_interpreter.ipynb]()
+    
+    Current implementation does not extend parent class but rather, forward instance to parent class by calling parent class method, and return back to previous class once done eval at parent class. This process is analogy to descend to parent class and ascend back to child class; isn't it mutual recursion?
 
     Why author does not use Python's extend and `super`? Personally, foward instance to other class give me more control than using `super`.
    ```python
@@ -56,7 +58,7 @@ The programs require Python Lex-Yacc library to run. You may get the library fro
    ```
    
    ![](figures/interpreter_inheritance.svg)
-5. 
+
 # TODO
 1. add unpack operation to all let variant
    ```

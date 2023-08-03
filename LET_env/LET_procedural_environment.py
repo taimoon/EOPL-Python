@@ -1,4 +1,4 @@
-from LET_ast_node import *
+from LET_ast_node import (Proc_Val)
 
 # procedural representation
 def empty_env():
