@@ -132,10 +132,6 @@ def test_ints2():
     assert(type_of_prog(prog) == parse('type pairof int * ints2.t'))
     assert(value_of_prog(prog) == ast.Pair(2,-6))
     
-def test_ints():
-    test_ints1()
-    test_ints2()
-    
 def test_int_maker():
     prog_ints1 = ints1_setup()
     prog_ints2 = ints2_setup()
@@ -189,6 +185,8 @@ def test_all():
     test_transparent()
     test_opaque()
     test_color_example()
-    test_ints()
+    test_ints1()
+    test_ints2()
+    test_int_maker()
     print('end of test typed modules')
     

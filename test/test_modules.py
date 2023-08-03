@@ -1,7 +1,9 @@
-def test_modules():
-    from MODULES import value_of_prog
-    from CHECKED import type_of_prog
-    import LET_ast_node as ast
+from MODULES import value_of_prog
+
+import LET_ast_node as ast
+from LET_environment import Repeated_Binding
+
+def test_simple_module(type_of_prog):
     prog = '''\
     module m1
         interface [
@@ -18,7 +20,9 @@ def test_modules():
     '''
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 22)
-    
+
+
+def test_multiple_modules(type_of_prog):
     prog = '''
     module m1
         interface
@@ -41,8 +45,9 @@ def test_modules():
     '''
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 132)
-    
-    from LET_environment import Repeated_Binding
+
+
+def test_repeated_binding(type_of_prog):
     try:
         prog = '''\
         module m1
@@ -59,7 +64,9 @@ def test_modules():
     except Exception as e:
         print(e)
         assert(False)
-    
+
+
+def test_module_in_module(type_of_prog):
     prog = '''\
     module m1
     interface
@@ -75,7 +82,9 @@ def test_modules():
     '''
     assert(type_of_prog(prog) == ast.Int_Type())
     assert(value_of_prog(prog) == 32)
-    
+   
+
+def test_let_module(type_of_prog):
     prog = '''
     module m1
     interface
@@ -83,12 +92,15 @@ def test_modules():
     body
         let 
             x = 2
-        in  [y = x]
-    m1.y
+        in  [x = *(x,x)]
+    m1.x
     '''
-    assert(value_of_prog(prog) == 2)
-    
-    prog = '''
+    assert(type_of_prog(prog) == ast.Int_Type())
+    assert(value_of_prog(prog) == 4)
+
+
+def test_letrec_module(type_of_prog):
+    prog = lambda x: f'''
     module odd_even
     interface
         [even : (int -> bool)
@@ -101,15 +113,22 @@ def test_modules():
         even = proc(x:int) equal?((local_even x), 1)
         odd = proc(x:int) zero?((local_odd x))
         ]
-    (odd_even.even 6)
+    (odd_even.even {x})
     '''
-    assert(type_of_prog(prog) == ast.Bool_Type())
-    assert(value_of_prog(prog) is True)
-    print('end of test modules')
+    assert(type_of_prog(prog(6)) == ast.Bool_Type())
+    assert(value_of_prog(prog(6)) is True)
     
 
 def test_all():
-    test_modules()
+    from CHECKED import type_of_prog
+    test_simple_module(type_of_prog)
+    test_multiple_modules(type_of_prog)
+    test_repeated_binding(type_of_prog)
+    test_module_in_module(type_of_prog)
+    test_let_module(type_of_prog)
+    test_letrec_module(type_of_prog)
+    print('end of test modules')
+
     
 if __name__ == '__main__':
     test_all()
