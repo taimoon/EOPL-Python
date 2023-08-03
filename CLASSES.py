@@ -28,8 +28,8 @@ class CLASSES_Interpreter:
     def change_init_env(self,env:Env):
         return IMPLICIT_REFS_Interpreter.change_init_env(self,env)
     
-    def apply_proc(self,proc,args,env:Env):
-        return IMPLICIT_REFS_Interpreter.apply_proc(self,proc,args,env)
+    def apply_proc(self,proc,args):
+        return IMPLICIT_REFS_Interpreter.apply_proc(self,proc,args)
     
     def value_of_prog(self,prog, env = None, parse = parser.parse):
         prog = parse(prog)

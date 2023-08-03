@@ -52,18 +52,16 @@ def translation_of(expr,static_env):
         translate = lambda params,body: translation_of(Proc_Exp(params,body),new_senv)
         exps = tuple(translate(*args) for args in zip(expr.params,expr.body))
         return Nameless_Rec_Exp(exps,translation_of(expr.expr,new_senv))
+    elif isinstance(expr,Let_Exp):
+        new_senv = extend_senv_vars(expr.vars,static_env)
+        exps = tuple(translation_of(exp,static_env) for exp in expr.exps)
+        return Nameless_Let_Exp(exps,translation_of(expr.body,new_senv))
     elif isinstance(expr, Primitive_Exp):
         return translation_of(App_Exp(Var_Exp(expr.op),expr.exps),static_env)
     elif isinstance(expr,List):
         return translation_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),static_env)
     elif isinstance(expr,Pair_Exp):
         return translation_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),static_env)
-    elif isinstance(expr,Let_Exp):
-        # derived form
-        # return translation_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), static_env)
-        new_senv = extend_senv_vars(expr.vars,static_env)
-        exps = tuple(translation_of(exp,static_env) for exp in expr.exps)
-        return Nameless_Let_Exp(exps,translation_of(expr.body,new_senv))
     elif isinstance(expr,Let_Star_Exp):
         return translation_of(expand_let_star(expr),static_env)
     elif isinstance(expr,Conditional):
@@ -83,20 +81,19 @@ class Nameless_Let_Interpreter:
         # the code below is to translate that env to static env and nameless env accordingly
         senv = empty_senv()
         nameless_env = empty_nameless_env()
-        if isinstance(env,Environment):
-            for e in env:
-                vars = tuple(p[0] for p in e)
-                vals = tuple(p[1] for p in e)
-                senv = extend_senv_vars(vars,senv)
-                nameless_env = extend_nameless_env_vals(vals,nameless_env)
+        assert(isinstance(env,Environment))
+        for e in env:
+            vars = tuple(p[0] for p in e)
+            vals = tuple(p[1] for p in e)
+            senv = extend_senv_vars(vars,senv)
+            nameless_env = extend_nameless_env_vals(vals,nameless_env)
         nameless_prog = translation_of(parse(prog),senv)
         return self.value_of(nameless_prog, nameless_env)
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
         if isinstance(proc,Primitve_Implementation):
             return Let_Interpreter.apply_primitive(self,proc,args)
-        env = proc.env
-        env = extend_nameless_env_vals(args,env)
+        env = extend_nameless_env_vals(args,proc.env)
         return self.value_of(proc.body,env)
 
     def value_of(self,expr, nameless_env):

@@ -1,5 +1,5 @@
 def test_modules():
-    from LET import value_of_prog
+    from MODULES import value_of_prog
     from CHECKED import type_of_prog
     import LET_ast_node as ast
     prog = '''\
@@ -108,7 +108,7 @@ def test_modules():
     print('end of test modules')
     
 def test_typed_modules():
-    from LET import value_of_prog
+    from MODULES import value_of_prog
     import LET_ast_node as ast
     from CHECKED import type_of_prog
     from LET_parser import parser

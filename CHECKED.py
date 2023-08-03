@@ -142,8 +142,6 @@ def rec_proc_to_tenv(exp:Rec_Proc,tenv:Environment) -> Environment:
     vals = tuple(Proc_Type(arg_t,res_t) for arg_t,res_t in zip(exp.arg_types,exp.res_types))
     vars = exp.var
     tenv = extend_tenv_from_pairs(vars,vals,tenv)
-    # for var,arg_t,res_t in zip(exp.var,exp.arg_types,exp.res_types):
-        # tenv = extend_tenv(var,Proc_Type(arg_t,res_t),tenv)
     
     for params,arg_t,body,res_t in zip(exp.params,exp.arg_types,exp.body,exp.res_types):
         body_t = type_of(body,extend_tenv_from_pairs(params,arg_t,tenv))

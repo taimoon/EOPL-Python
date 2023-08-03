@@ -50,11 +50,11 @@ class IMPLICIT_REFS_Interpreter:
         init_store()
         return self.value_of(prog, self.change_init_env(env))
 
-    def apply_proc(self,proc:Proc_Val,args,env:Environment):
+    def apply_proc(self,proc:Proc_Val,args):
         if isinstance(proc, Primitve_Implementation):
             return proc.op(*args)
         vals = tuple(newref(arg) for arg in args)
-        env = extend_env_from_pairs(proc.params,vals,env)
+        env = extend_env_from_pairs(proc.params,vals,proc.env)
         return self.value_of(proc.body, env)
 
     def value_of(self,expr, env):
