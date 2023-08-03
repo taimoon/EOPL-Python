@@ -618,7 +618,6 @@ def test_inference():
     prog = get_answer(prog)
     assert(lambda_alpha_subst(prog,ans).type == prog)
     
-
 def test_all_by_variant(value_of_prog):
     test_env()
     test_diff_exp(value_of_prog)
