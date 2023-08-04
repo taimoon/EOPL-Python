@@ -119,16 +119,25 @@ def test_letrec_module(type_of_prog):
     assert(value_of_prog(prog(6)) is True)
     
 
-def test_all():
-    from CHECKED import type_of_prog
+def test_by_variant(type_of_prog):
     test_simple_module(type_of_prog)
     test_multiple_modules(type_of_prog)
     test_repeated_binding(type_of_prog)
     test_module_in_module(type_of_prog)
     test_let_module(type_of_prog)
     test_letrec_module(type_of_prog)
+
+def test_all():
+    from CHECKED_MODULES import type_of_prog
+    test_by_variant(type_of_prog)
+    print('end of test modules')
+    from CHECKED_OPAQUE import type_of_prog
+    test_by_variant(type_of_prog)
+    print('end of test modules')
+    from CHECKED_PROC_MODULES import type_of_prog
+    test_by_variant(type_of_prog)
     print('end of test modules')
 
-    
+
 if __name__ == '__main__':
     test_all()

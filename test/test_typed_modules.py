@@ -1,10 +1,9 @@
 from MODULES import value_of_prog
 import LET_ast_node as ast
-from CHECKED import type_of_prog
 from LET_parser import parser
 parse = parser.parse
 
-def test_transparent():
+def test_transparent(type_of_prog):
     parse = parser.parse
     prog = '''
     module m1
@@ -25,7 +24,7 @@ def test_transparent():
     assert(type_of_prog(prog) == ans)
     value_of_prog(prog)
     
-def test_opaque():
+def test_opaque(type_of_prog):
     prog = '''
     module m1
     interface
@@ -45,7 +44,7 @@ def test_opaque():
     assert(type_of_prog(prog) == ans)
     value_of_prog(prog)
     
-def test_color_example():
+def test_color_example(type_of_prog):
     prog = '''
     module colors
     interface
@@ -99,7 +98,7 @@ def ints2_setup():
     '''
     return prog_ints2
 
-def test_ints1():
+def test_ints1(type_of_prog):
     prog_ints1 = ints1_setup()
     prog = f'''{prog_ints1}
     let z = ints1.zero
@@ -115,7 +114,7 @@ def test_ints1():
     assert(type_of_prog(prog) == parse('type pairof ints1.t * int'))
     assert(value_of_prog(prog) == ast.Pair(10,2))
     
-def test_ints2():
+def test_ints2(type_of_prog):
     prog_ints2 = ints2_setup()
     
     prog = f'''{prog_ints2}
@@ -132,7 +131,7 @@ def test_ints2():
     assert(type_of_prog(prog) == parse('type pairof int * ints2.t'))
     assert(value_of_prog(prog) == ast.Pair(2,-6))
     
-def test_int_maker():
+def test_int_maker(type_of_prog):
     prog_ints1 = ints1_setup()
     prog_ints2 = ints2_setup()
     prog_to_int_maker = '''
@@ -181,12 +180,23 @@ def test_int_maker():
     assert(value_of_prog(prog) == ast.Pair(2,2))
     assert(type_of_prog(prog) == parse('type pairof int * int'))
     
+def test_type_by_variant(type_of_prog):
+    # test opaque modules
+    test_transparent(type_of_prog)
+    test_opaque(type_of_prog)
+    test_color_example(type_of_prog)
+    test_ints1(type_of_prog)
+    test_ints2(type_of_prog)
+
 def test_all():
-    test_transparent()
-    test_opaque()
-    test_color_example()
-    test_ints1()
-    test_ints2()
-    test_int_maker()
+    from CHECKED_OPAQUE import type_of_prog
+    test_type_by_variant(type_of_prog)
+    print('end of test typed modules')
+
+    from CHECKED_PROC_MODULES import type_of_prog
+    # test opaque modules
+    test_type_by_variant(type_of_prog)
+    # test proc modules
+    test_int_maker(type_of_prog)
     print('end of test typed modules')
     
