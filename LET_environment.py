@@ -49,6 +49,7 @@ def init_tenv():
               'equal?'  : Proc_Type((Int_Type(),Int_Type()),Bool_Type()),
               'zero?'   : Proc_Type((Int_Type(),),Bool_Type()),
               'minus'   : Proc_Type((Int_Type(),Int_Type()),Int_Type()),
+              'sqrt' : Proc_Type((Int_Type(),),Int_Type())
             }
     return empty_env().extend_from_dict(corspd)
 
@@ -60,6 +61,7 @@ def get_all_primitive_implementation():
     def cdr(t): return t.cdr
     
     from operator import sub,add,mul,truediv,gt,lt,eq
+    from math import sqrt
     corspd = {'-'  : sub,
               '+'  : add,
               '*'  : mul,
@@ -74,7 +76,8 @@ def get_all_primitive_implementation():
               'cdr'     : cdr,
               'list'    : Pair.list_to_pair,
               'print'   : print,
-              'null?'   : lambda x: isinstance(x,NULL)
+              'null?'   : lambda x: isinstance(x,NULL),
+              'sqrt'    : sqrt
             }
     return corspd
 
