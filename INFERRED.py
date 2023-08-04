@@ -175,8 +175,7 @@ def type_of(expr, env, subst):
         return Answer(ans_conseq.type,ans_conseq.subst)
     elif isinstance(expr, Proc_Exp):
         var_types = tuple(map(opt_type_2_type,expr.types))
-        for var,t in zip(expr.params,var_types):
-            env = extend_env(var,t,env)
+        env = extend_env_from_pairs(expr.params,var_types,env)
         ans:Answer = type_of(expr.body,env,subst)
         return Answer(Proc_Type(var_types,ans.type),ans.subst)
     elif isinstance(expr, App_Exp):
@@ -192,36 +191,30 @@ def type_of(expr, env, subst):
                         subst,expr)
         return Answer(res_t,subst)
     elif isinstance(expr, Rec_Proc):
-        expr.res_types,expr.var,
-        expr.arg_types,expr.params,
-        expr.body,expr.expr,
-        
         res_types = tuple(map(opt_type_2_type,expr.res_types))
         
         f = lambda arg_ts: tuple(map(opt_type_2_type,arg_ts))
         arg_types = tuple(map(f,expr.arg_types))
-        
-        for proc_name,arg_ts,res_t in \
-            zip(expr.var, arg_types,res_types):
-            env = extend_env(proc_name,
-                             Proc_Type(arg_ts,res_t),
-                             env)
+        vars = expr.var
+        vals = tuple(Proc_Type(arg_ts,res_t) for arg_ts,res_t in zip(arg_types,res_types))
+        env = extend_env_from_pairs(vars,vals,env)
         
         for body,params,arg_ts,res_t in \
             zip(expr.body,expr.params,arg_types,res_types):
-            ext_env = env
-            for param,arg_t in zip(params,arg_ts):
-                ext_env = extend_env(param,arg_t)
+            
+            ext_env = extend_env_from_pairs(params,arg_ts,env)
             # the subst should accumlate
             ans:Answer = type_of(body,ext_env,subst)
             subst = unifier(ans.type,res_t,ans.subst,body)
         return type_of(expr.expr,env,subst)
+    elif isinstance(expr,Pair_Exp):
+        raise NotImplementedError
     # Derived Form
     elif isinstance(expr,Let_Exp):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form
-        types = tuple(type_of(exp,env) for exp in expr.exps)
-        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env)
+        types = tuple(type_of(exp,env,subst) for exp in expr.exps)
+        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env,subst)
     elif isinstance(expr,Let_Star_Exp):
         def expand(vars,exprs):
             if vars == ():

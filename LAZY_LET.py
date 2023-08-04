@@ -4,9 +4,9 @@ from LET_ast_node import *
 from memory import *
 from LET_environment import (
     Environment,
-    extend_env,
     apply_env,
     init_env,
+    extend_env_from_pairs,
 )
 
 def value_of_prog(prog, env = init_env(), parse = parser.parse):
@@ -27,8 +27,7 @@ class LAZY_Let_Interpreter:
         return IMPLICIT_REFS_Interpreter.value_of_prog(self,prog,env,parse)
 
     def apply_proc(self,proc:Proc_Val,args,env:Environment):
-        for param,arg in zip(proc.params,args):
-            env = extend_env(param,arg,env)
+        env = extend_env_from_pairs(proc.params,args,env)
         return self.value_of(proc.body, env)
 
     def value_of_operand(self,expr, env):

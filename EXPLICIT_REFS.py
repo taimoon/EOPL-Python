@@ -13,8 +13,8 @@ class EXPLICIT_REFS_Interpreter:
         value_of = self.value_of
         return value_of(parse(prog), env)
     
-    def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args,env):
-        return Let_Interpreter.apply_proc(self,proc,args,env)
+    def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
+        return Let_Interpreter.apply_proc(self,proc,args)
     
     def value_of(self,expr, env):
         value_of = self.value_of

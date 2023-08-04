@@ -32,8 +32,7 @@ def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
     if isinstance(proc,Primitve_Implementation):
         return apply_cont(cc,proc.op(*args))
     env = proc.env
-    for param,arg in zip(proc.params,args):
-        env = extend_env(param,arg,env)
+    env = extend_env_from_pairs(proc.params,args,env)
     return value_of_k(proc.body, env, cc)
 
 def value_of_k(expr, env, cc):

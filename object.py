@@ -5,7 +5,7 @@ import LET_ast_node as ast
 class Object:
     'interpreter data struct'
     class_name:str
-    fields:list
+    fields:tuple
 
 @dataclass
 class Method:
@@ -15,7 +15,7 @@ class Method:
     super_name:str
     field_names:tuple[str]
 
-Method_Env_T = list[tuple[str,Method]]
+Method_Env_T = tuple[tuple[str,Method]]
 
 @dataclass
 class Class:
@@ -25,12 +25,12 @@ class Class:
 
 @dataclass
 class Class_Env:
-    env:list[tuple[str,Class]]
+    env:tuple[tuple[str,Class]]
     def __init__(self) -> None:
-        self.env = []
+        self.env = tuple()
     
     def add_class(self,name:str,cls:Class):
-        self.env = [(name,cls)] + self.env
+        self.env = ((name,cls),) + self.env
     
     def lookup_class(self,cls_name:str):
         for name,cls in self.env:
@@ -44,7 +44,8 @@ class Class_Env:
 the_class_env = Class_Env()
 
 def init_class_env(decls:tuple[ast.Class_Decl]):
-    the_class_env.add_class('object',Class(None,(),[]))
+    the_class_env.__init__()
+    the_class_env.add_class('object',Class(None,(),()))
     for decl in decls:
         add_class_decl(decl)
 
@@ -75,11 +76,11 @@ def append_field_names(supers:tuple[str],fields:tuple[str]) -> tuple[str]:
     return tuple(f(super) for super in supers) + fields
 
 
-def method_decls_to_env(decls:tuple[ast.Method_Decl],super:str,fields:list[str])\
+def method_decls_to_env(decls:tuple[ast.Method_Decl],super:str,fields:tuple[str])\
     -> Method_Env_T:
     def method_from(decl:ast.Method_Decl):
         return Method(decl.vars,decl.body,super,fields)
-    return [(decl.name,method_from(decl)) for decl in decls]
+    return tuple((decl.name,method_from(decl)) for decl in decls)
 
 def merge_method_envs(parent:Method_Env_T,child:Method_Env_T):
     return  child + parent
@@ -95,6 +96,6 @@ def new_object(cls_name:str):
     from memory import newref
     field_names = lookup_class(cls_name).field_names
     # the val passed to newref can be any
-    res = Object(cls_name,[newref(['%uninitialized',name]) for name in field_names])
+    res = Object(cls_name,tuple(newref(['%uninitialized',name]) for name in field_names))
     return res
 

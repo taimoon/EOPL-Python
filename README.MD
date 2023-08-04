@@ -36,29 +36,26 @@ The programs require Python Lex-Yacc library to run. You may get the library fro
     It might be tempting to seperate expansion process from `value_of` function. The reason of not seperating these is that put all behaviour definition in the same function, even they are derived. This is to document these together.
     
     However, expansion has the problem that we cannot easily to know the expected behaviour of program from the expansions itself. This requires additional documentation.
+4. Interpreter Inheritance. Inspired by [IU Compiler Course - Essential of Compilation](https://github.com/IUCompilerCourse/Essentials-of-Compilation). The textbook wrote a section how OOP make the compiler extensible. Though there is workaround if you do not resolve to use OOP. The example is included at [./note/extensible_interpreter.ipynb]()
+    
+    Current implementation does not extend parent class but rather, forward instance to parent class by calling parent class method, and return back to previous class once done eval at parent class. This process is analogy to descend to parent class and ascend back to child class; isn't it mutual recursion?
 
-# TODO
-1. add unpack operation to all let variant
+    Why author does not use Python's extend and `super`? Personally, foward instance to other class give me more control than using `super`.
+   ```python
+   class Let_Interpreter:
+        def value_of(self,expr,env):
+            value_of = self.value_of
+            if ...:
+                return value_of(exp,env)
+            else:
+                raise Exception
+
+   class Nameless_Let_Interpreter:
+        def value_of(self,expr,env):
+                if ...
+                else:
+                    return Let_Interpreter.value_of(self,expr,nameless_env)
    ```
-   let u = 7
-    in unpack x y = list(u,3)
-    in -(x,y) 
-    => 4
-   ```
-   Previously, testing various implementation of unpack operation. There are at least 2 implementations has been tried
-   1. Add `unpack` as primitive implementation to env, the proc will first unpack evaluated list expression then apply it
-   2. Expand `unpack_exp` to application form, then it is the task of application_exp evaluator to unpack the list arguments. (current implementation)
    
-   Additionally, I've overloaded the meaning of `Unpack_Exp`; inspired by Python `*args,**kwargs`; Scheme `(apply <operator> (list ...))`. This allows `unpack` let defined as derived form.
+   ![](figures/interpreter_inheritance.svg)
 
-   For example,
-   ```
-   (add unpack(list(3,4)))
-   ```
-   should be same as
-   ```
-   (add 3 4)
-   ```
-2. Specify and implement multi-arguments PROC_MODULES
-3. Complete Chapter 6 - Continuation Passing Style
-4. Complete Chapter 9 - Objects and Classes

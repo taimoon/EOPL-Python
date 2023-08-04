@@ -1,9 +1,9 @@
 from LET_parser import parser
 from LET_environment import (
     init_env,
-    extend_env,
     apply_env,
     extend_env_rec_multi,
+    extend_env_from_pairs,
 )
 from memory import *
 from dataclasses import dataclass
@@ -43,8 +43,7 @@ def value_of_prog(prog, env = init_env(), parse = parser.parse):
 def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env,store:Store) -> Answer:
     if isinstance(proc,Primitve_Implementation):
         return Answer(proc.op(*args),store)
-    for param,arg in zip(proc.params,args):
-        env = extend_env(param,arg,env)
+    env = extend_env_from_pairs(proc.params,args,env)
     if isinstance(proc,Proc_Val):
         return value_of(proc.body, env, store)
     
