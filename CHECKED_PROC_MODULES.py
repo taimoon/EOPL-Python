@@ -1,6 +1,5 @@
 from LET_ast_node import *
 from LET_parser import parser
-from LET import expand_let_star
 from LET_environment import (
     Environment,
     init_tenv,
@@ -24,19 +23,8 @@ def fresh_name():
         yield ''.join(c)
         
 
-class CHECKED:
+class CHECKED(CHECKED_OPAQUE):
     fresh_name = fresh_name()
-    def type_of_prog(self,prog,env = init_tenv(),parse = parser.parse):
-        return CHECKED_OPAQUE.type_of_prog(self,prog,env,parse)
-    
-    def check_equal_type(self,t1,t2,exp):
-        return CHECKED_OPAQUE.check_equal_type(self,t1,t2,exp)
-        
-    def type_of(self,expr,tenv):
-        return CHECKED_OPAQUE.type_of(self,expr,tenv)
-
-    def rec_proc_to_tenv(self,exp:Rec_Proc,tenv:Environment) -> Environment:
-        return CHECKED_OPAQUE.rec_proc_to_tenv(self,exp,tenv)
 
     def add_modules_to_tenv(self,modules:tuple[Module_Def],tenv):
         add_modules_to_tenv = self.add_modules_to_tenv
@@ -112,11 +100,7 @@ class CHECKED:
         interface_comp = self.interface_comp
         rename_interface = self.rename_interface
         expand_interface = self.expand_interface
-        decls_comp = self.decls_comp
-        def is_simple_interface(t):
-            return isinstance(t,tuple) and isinstance(t[0],Decl_Type)
         areinstance = lambda type,*args: all(isinstance(arg,type) for arg in args)
-        # if isinstance(actual,Proc_Interface) and isinstance(expected,Proc_Interface):
         if areinstance(Proc_Interface,actual,expected):
             new_tenv = tenv
             res_iface1 = actual.res_interface
@@ -132,11 +116,8 @@ class CHECKED:
                 new_tenv = extend_tenv_with_module(new_name,iface1,new_tenv)
             
             return interface_comp(res_iface1,res_iface2,new_tenv)
-        elif is_simple_interface(actual) and is_simple_interface(expected):
-            return decls_comp(actual,expected,tenv)
         else:
-            print(type(actual),type(expected))
-            raise NotImplementedError
+            return super(CHECKED,self).interface_comp(actual,expected,tenv)
 
     def rename_type(self,type,name,new_name):
         rename_type = self.rename_type
@@ -162,40 +143,4 @@ class CHECKED:
             else:
                 raise NotImplementedError
         return tuple(rename(decl) for decl in interface)
-            
-
-
-    def defs_to_decls(self,defs:tuple[Def_Type],tenv:Environment) -> tuple[Decl_Type]:
-        return CHECKED_OPAQUE.defs_to_decls(self,defs,tenv)
-
-
-    def subset_interface(self,actual:tuple[Var_Decl],expected:tuple[Var_Decl]):
-        return CHECKED_OPAQUE.subset_interface(self,actual,expected)
-
-
-    def expand_type(self,type,tenv:Environment):
-        return CHECKED_OPAQUE.expand_type(self,type,tenv)
-
-
-    def expand_types(self,types,tenv:Environment):
-        return CHECKED_OPAQUE.expand_types(self,types,tenv)
-
-
-    def is_equiv_type(self,t1,t2,tenv):
-        return CHECKED_OPAQUE.is_equiv_type(self,t1,t2,tenv)
-
-
-    def decls_comp(self,actual:tuple[Decl_Type],expected:tuple[Decl_Type],tenv:Environment):
-        return CHECKED_OPAQUE.decls_comp(self,actual,expected,tenv)
-
-
-    def decl_satisfy(self,left:Decl_Type,right:Decl_Type,tenv):
-        return CHECKED_OPAQUE.decl_satisfy(self,left,right,tenv)
-
-    def expand_interface(self,module_name,decls:tuple[Decl_Type],tenv:Environment) -> tuple[Decl_Type]:
-        return CHECKED_OPAQUE.expand_interface(self,module_name,decls,tenv)
-
-
-    def extend_tenv_with_decl(self,decl,tenv) -> Environment:
-        return CHECKED_OPAQUE.extend_tenv_with_decl(self,decl,tenv)
 

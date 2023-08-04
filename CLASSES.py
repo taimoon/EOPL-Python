@@ -42,7 +42,9 @@ class CLASSES_Interpreter:
     def value_of(self,expr,env):
         value_of = self.value_of
         if isinstance(expr,Self_Exp):
-            return apply_env(env,"%self")
+            res = apply_env(env,"%self")
+            assert(isinstance(res,Object))
+            return res
         elif isinstance(expr,Method_Call_Exp):
             args = tuple(value_of(exp,env) for exp in expr.operands)
             obj:Object = value_of(expr.obj_exp,env)
@@ -63,10 +65,7 @@ class CLASSES_Interpreter:
             return obj
         elif isinstance(expr,Instance_Exp):
             obj = value_of(expr.exp,env)
-            if isinstance(obj,Object):
-                return obj.class_name == expr.cls_name
-            else:
-                return False
+            return (isinstance(obj,Object) and obj.class_name == expr.cls_name)
         else:
             return IMPLICIT_REFS_Interpreter.value_of(self,expr,env)
 

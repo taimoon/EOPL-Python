@@ -72,7 +72,7 @@ class CHECKED:
         elif isinstance(exp,Let_Star_Exp):
             return let_exp_to_tenv(expand_let_star(exp),tenv)
         elif isinstance(exp,Rec_Proc):
-            rec_proc_to_tenv = CHECKED().rec_proc_to_tenv
+            rec_proc_to_tenv = self.rec_proc_to_tenv
             return rec_proc_to_tenv(exp,tenv)
         else:
             return tenv

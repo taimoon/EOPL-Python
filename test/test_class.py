@@ -1,10 +1,10 @@
 from LET_parser import parser
-from CLASSES import value_of_prog
+
 import LET_ast_node as ast
 List = ast.Pair.list_to_pair
 parse = parser.parse
 
-def test_simple_class():
+def test_simple_class(value_of_prog):
     prog = '''
     class c1 extends object
     field i
@@ -35,7 +35,7 @@ def test_simple_class():
     expected = List(List(3,-3),List(5,-5))
     assert(str(res) == str(expected))
 
-def test_leaf_class():
+def test_leaf_class(value_of_prog):
     prog = '''
     class interior-node extends object
     field left
@@ -59,7 +59,7 @@ def test_leaf_class():
     '''
     assert(value_of_prog(prog) == 12)
 
-def test_color_class():
+def test_color_class(value_of_prog):
     prog = '''
     class point extends object
     field x 
@@ -94,7 +94,7 @@ def test_color_class():
     expected = List(List(6,8),List(20,40),87)
     assert(str(res) == str(expected))
 
-def test_class_scope1():
+def test_class_scope1(value_of_prog):
     prog = '''
     class c1 extends object
     field x
@@ -124,7 +124,7 @@ def test_class_scope1():
     expected =  List(101,102,101,999)
     assert(str(res) == str(expected))
 
-def test_class_scope2():
+def test_class_scope2(value_of_prog):
     prog = '''
     class c1 extends object
     method initialize () 1
@@ -139,7 +139,7 @@ def test_class_scope2():
     expected =  List(11,22,22)
     assert(str(res) == str(expected))
     
-def test_super():
+def test_super(value_of_prog):
     cls = '''
     class c1 extends object
     method initialize () 1
@@ -164,7 +164,7 @@ def test_super():
     ans = List(32,33,22,23)
     assert(str(res) == str(ans))
     
-def test_queue_class():
+def test_queue_class(value_of_prog):
     from LET_parser import parser
     from CLASSES import value_of_prog
     import LET_ast_node as ast
@@ -216,11 +216,17 @@ def test_queue_class():
     assert(str(res) == str(expected))
 
 
+def test_all_by_variant(value_of_prog):
+    test_simple_class(value_of_prog)
+    test_leaf_class(value_of_prog)
+    test_color_class(value_of_prog)
+    test_class_scope1(value_of_prog)
+    test_class_scope2(value_of_prog)
+    test_super(value_of_prog)
+    test_queue_class(value_of_prog)
+
 def test_all():
-    test_simple_class()
-    test_leaf_class()
-    test_color_class()
-    test_class_scope1()
-    test_class_scope2()
-    test_super()
-    test_queue_class()
+    print("test class")
+    from CLASSES import value_of_prog
+    test_all_by_variant(value_of_prog)
+    print("end of class test")
