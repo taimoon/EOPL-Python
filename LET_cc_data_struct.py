@@ -1,15 +1,13 @@
-from typing import Callable
-from dataclasses import dataclass
 from LET_parser import parser
-from LET_ast_node import *
 from LET_environment import (
-    Environment as Env,
     extend_env_from_pairs,
     init_env,
     extend_env_rec_multi,
     apply_env,
 )
 from LET import expand_conditional,expand_let_star
+from LET_ast_node import *
+from continuation import *
 
 def apply_cont(cc,val):
     if isinstance(cc,End_Cont):
@@ -102,53 +100,6 @@ def value_of_k(expr,env,cc):
                           env,cc)
     else:
         raise Exception("Uknown LET expression type", expr)
-
-@dataclass
-class Cont:
-    cc:Callable[[int],int]
-
-@dataclass
-class End_Cont(Cont):
-    cc:Callable[[int],int] = None
-    
-@dataclass
-class Zero_Cont(Cont):
-    pass
-
-@dataclass
-class Paramless_Cont(Cont):
-    pass
-    
-@dataclass
-class Branch_Cont(Cont):
-    env:Env
-    conseq:None
-    alter:None
-
-@dataclass
-class Diff_Cont1(Cont):
-    env:Env
-    exp2:None
-
-@dataclass
-class Diff_Cont2(Cont):
-    v:int
-
-@dataclass
-class Args_Cont(Cont):
-    env:Env
-    exps:list
-    acm_vals:list
-    
-@dataclass
-class Operand_Cont(Cont):
-    proc:Pair
-
-@dataclass
-class Operator_Cont(Cont):
-    env:Env
-    list_expr:None
-
 
 def zero_cc_ctor(cc):
     return Zero_Cont(cc)
