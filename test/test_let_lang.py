@@ -31,6 +31,8 @@ def test_bi_exp(value_of_prog):
     assert(value_of_prog(prog) == 14)
     prog = '+(*(/(9,5),32),32)'
     assert(value_of_prog(prog) == 9/5*32+32)
+    prog = "zero?(-(2,2))"
+    assert(value_of_prog(prog) is True)
     prog = 'less?(1,2)'
     assert(value_of_prog(prog) is True)
     prog = 'less?(0,-2)'
@@ -46,6 +48,8 @@ def test_bi_exp(value_of_prog):
 
 def test_if(value_of_prog):
     from LET_environment import extend_env_from_pairs,init_env
+    prog = 'if zero?(0) then if zero?(1) then 0 else 1 else 0'
+    assert(value_of_prog(prog) == 1)
     env = extend_env_from_pairs(('x','y'),(33,22),init_env())
     prog = 'if zero?(-(x,11)) then -(y,2)  else -(y,4)'
     assert(value_of_prog(prog,env) == 18)
@@ -499,9 +503,16 @@ def test_all():
     from LET_cc import value_of_prog 
     print('LET_cc')
     test_all_by_variant(value_of_prog)
+    from LET_cc_data_struct import value_of_prog 
+    print('LET_cc_data_struct')
+    test_all_by_variant(value_of_prog)
+    from LET_cc_inline import value_of_prog 
+    print('LET_cc_inline')
+    test_all_by_variant(value_of_prog)
     from LET_cc_imperative import value_of_prog 
     print('LET_cc_imperative')
     test_all_by_variant(value_of_prog)
+    
 
 
 if __name__ == '__main__':
