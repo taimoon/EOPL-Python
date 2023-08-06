@@ -11,11 +11,19 @@ from continuation import *
 
 @dataclass
 class Registers:
+    'Registers.exp is overloaded to store procedure value'
     exp:None = None
     env:Env = None
-    proc:None = None
     val:None = None
     cc:Cont = None
+    
+    @property
+    def proc(self):
+        return self.exp
+    
+    @proc.setter
+    def proc(self,val):
+        self.exp = val
 
 reg = Registers()
 
