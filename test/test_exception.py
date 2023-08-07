@@ -35,5 +35,7 @@ def test_exception(value_of_prog):
 def test_all():
     from LET_cc_data_struct import value_of_prog
     test_exception(value_of_prog)
+    from LET_cc import value_of_prog
+    test_exception(value_of_prog)
     from LET_cc_imperative import value_of_prog
     test_exception(value_of_prog)
