@@ -86,6 +86,11 @@ def apply_cont():
         reg.proc = cc.proc
         reg.cc = cc.cc
         apply_proc_k()
+    elif isinstance(cc,Try_Cont):
+        reg.cc = cc.cc
+        apply_cont()
+    elif isinstance(cc,Raise_Cont):
+        apply_handler()
     else:
         print(cc)
         raise NotImplementedError
@@ -140,6 +145,17 @@ def value_of_k():
         reg.exp = expr.expr
         reg.env = extend_env_rec_multi(expr.var,expr.params,expr.body,env)
         value_of_k()
+    # exception
+    elif isinstance(expr,Try_Exp):
+        reg.exp = expr.exp
+        reg.cc = try_cont(expr.var,expr.handler,env,cc)
+        value_of_k()
+        # return value_of_k(expr.exp,env,try_cont(expr.var,expr.handler,env,cc))
+    elif isinstance(expr,Raise_Exp):
+        reg.exp = expr.exp
+        reg.cc = raise_cont1(cc)
+        value_of_k()
+        # return value_of_k(expr.exp,env,raise_cont1(cc))
     # derived form
     elif isinstance(expr, Primitive_Exp):
         reg.exp = App_Exp(Var_Exp(expr.op),expr.exps)
@@ -165,6 +181,9 @@ def value_of_k():
         reg.exp = App_Exp(Proc_Exp(expr.vars,expr.expr),
                                   (Unpack_Exp(None,expr.list_expr,None),))
         value_of_k()
+    elif isinstance(expr,Null_Exp):
+        reg.exp = App_Exp(Var_Exp('null?'),(expr.expr,))
+        value_of_k()
     else:
         raise Exception("Uknown LET expression type", expr)
 
@@ -185,3 +204,23 @@ def operator_cc_ctor(list_expr,env,cc):
 
 def paramless_cc_ctor(cc):
     return Paramless_Cont(cc)
+
+def try_cont(var,handler,env,cc):
+    return Try_Cont(cc,var,handler,env)
+
+def raise_cont1(cc):
+    return Raise_Cont(cc)
+
+def apply_handler():
+    val = reg.val
+    cc = reg.cc
+    if isinstance(cc,End_Cont):
+        raise Exception("uncaught exception",val)
+    elif isinstance(cc,Try_Cont):
+        reg.env = extend_env_from_pairs((cc.var,),(val,),cc.env)
+        reg.exp = cc.handler
+        reg.cc = cc.cc
+        value_of_k()
+    else:
+        reg.cc = cc.cc
+        apply_handler()

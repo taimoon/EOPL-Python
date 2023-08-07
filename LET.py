@@ -7,9 +7,6 @@ from LET_environment import (
         apply_env,
         extend_env_from_pairs,
         extend_env_rec_multi,
-        lookup_qualified_var,
-        lookup_module_name,
-        extend_env_with_module,
     )
 
 def value_of_prog(prog,env = init_env(),parse = parser.parse):

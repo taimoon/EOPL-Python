@@ -82,6 +82,10 @@ def p_number(p):
     "expr : NUMBER"
     p[0] = Const_Exp(p[1])
 
+def p_str(p):
+    "expr : STRING"
+    p[0] = Const_Exp(p[1])
+
 def p_var_exp(p):
     '''expr : FROM ID TAKE ID
         | ID '.' ID
@@ -353,6 +357,20 @@ def p_memory_exp(p):
             p[0] = NewRef(expr)
         case ('REF', '(',expr,')'):
             p[0] = Ref(expr)
+
+# Exception Handling
+def p_exception_exp(p):
+    '''
+    expr : TRY expr CATCH '(' ID ')' expr
+        | RAISE expr
+    '''
+    match tuple(p)[1:]:
+        case ('try',exp,'catch','(',var,')',handler):
+            p[0] = Try_Exp(exp,var,handler)
+        case ('raise',exp):
+            p[0] = Raise_Exp(exp)
+        case _:
+            raise NotImplementedError(tuple(p)[1:])
 
 # Type
 def p_type(p):

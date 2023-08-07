@@ -48,4 +48,15 @@ class Operator_Cont(Cont):
     env:Env
     list_expr:None
 
+@dataclass
+class Try_Cont(Cont):
+    var:str
+    handler:None
+    env:Env
+    cc:Cont
+
+@dataclass
+class Raise_Cont(Cont):
+    pass
+
 
