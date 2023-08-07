@@ -157,7 +157,8 @@ def p_unary_op(p):
                 | MINUS
                 | CAR
                 | CDR
-                | PRINT"""
+                | PRINT
+                | SQRT"""
     p[0] = Unary_Op(p[1])
 
 def p_bi_op(p):

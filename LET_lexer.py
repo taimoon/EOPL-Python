@@ -27,6 +27,7 @@ reserved = {
    'car'   : 'CAR',
    'null?' : 'NULL_TEST',
    'print' : 'PRINT',
+   'sqrt' : 'SQRT',
    
    'less?'    : 'LESS_TEST',
    'greater?' : 'GREATER_TEST',

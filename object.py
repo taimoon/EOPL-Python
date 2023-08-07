@@ -19,6 +19,7 @@ Method_Env_T = tuple[tuple[str,Method]]
 
 @dataclass
 class Class:
+    'interpreter data struct'
     super_name:None|str
     field_names:tuple[str]
     method_env:Method_Env_T
