@@ -1,5 +1,4 @@
-import sys
-sys.setrecursionlimit(2000) # this is necessary for LET_cc testing
+
 IS_DYNAMIC = False
 
 
@@ -473,8 +472,12 @@ def test_all_by_variant(value_of_prog):
     
     print('pass all test')
 
+
 def test_all():
+    from sys import setrecursionlimit
     from LET import value_of_prog
+    setrecursionlimit(225)
+    
     print('LET')
     test_all_by_variant(value_of_prog)
     from NAMELESS_LET import value_of_prog
@@ -500,7 +503,10 @@ def test_all():
     test_ref(value_of_prog)
     test_swap(value_of_prog)
     test_laziness(value_of_prog)
-    from LET_cc import value_of_prog 
+    
+    from LET_cc import value_of_prog
+    # this is necessary for LET_cc testing
+    setrecursionlimit(2000) 
     print('LET_cc')
     test_all_by_variant(value_of_prog)
     from LET_cc_data_struct import value_of_prog 
@@ -509,9 +515,32 @@ def test_all():
     from LET_cc_inline import value_of_prog 
     print('LET_cc_inline')
     test_all_by_variant(value_of_prog)
-    from LET_cc_imperative import value_of_prog 
-    print('LET_cc_imperative')
-    test_all_by_variant(value_of_prog)
+    
+    '''
+    these tests registerized continuation interpreters properly iterative;
+    by limiting the recursion call stack;
+    better to use profiler to observe.
+    '''
+    
+    try:
+        # demostration
+        setrecursionlimit(500)
+        from LET_cc_data_struct import value_of_prog 
+        print('LET_cc_data_struct')
+        test_all_by_variant(value_of_prog)
+    except RecursionError as e:
+        print(f'LET_cc_data_struct: {e}')
+        
+    
+    try:
+        setrecursionlimit(200)
+        from LET_cc_imperative import value_of_prog 
+        print('LET_cc_imperative')
+        test_all_by_variant(value_of_prog)
+        print("LET_cc_imperative doesnt exceed stack depth limit of 200")
+    except RecursionError as e:
+        print(f'LET_cc_imperative: {e}')
+    
     
 
 

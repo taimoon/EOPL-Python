@@ -9,6 +9,10 @@ from LET import expand_conditional,expand_let_star
 from LET_ast_node import *
 from continuation import *
 
+def value_of_prog(prog, env = init_env(), parse = parser.parse):
+    return value_of_k(parse(prog),env,End_Cont())
+
+
 def apply_cont(cc,val):
     if isinstance(cc,End_Cont):
         return val
@@ -44,10 +48,6 @@ def apply_cont(cc,val):
     else:
         print(cc)
         raise NotImplementedError
-
-    
-def value_of_prog(prog, env = init_env(), parse = parser.parse):
-    return value_of_k(parse(prog),env,End_Cont())
 
 
 def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
@@ -97,9 +97,7 @@ def value_of_k(expr,env,cc):
     elif isinstance(expr,Let_Star_Exp):
         return value_of_k(expand_let_star(expr),env,cc)
     elif isinstance(expr,Let_Exp):
-        # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form
-        # return value_of(App_Exp(Proc_Exp([expr.var], expr.body), [expr.exp]), env)
         return value_of_k(App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps),env,cc)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
