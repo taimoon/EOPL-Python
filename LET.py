@@ -1,8 +1,6 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import (
-        Environment,
-        empty_env,
         init_env,
         apply_env,
         extend_env_from_pairs,

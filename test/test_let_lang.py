@@ -417,6 +417,21 @@ def test_swap(value_of_prog):
     '''
     assert(value_of_prog(prog) == 11)
 
+def test_immutability(value_of_prog):
+    prog = '''\
+    let x = 1
+    in letmutable adder = proc() set x = +(x,1)
+    in begin (adder); x end
+    '''
+    from IMPLICIT_REFS import Immutable_Modify_Error
+    try:
+        print(value_of_prog(prog))
+    except Immutable_Modify_Error as e:
+        pass
+    except Exception as e:
+        print(e)
+        raise Exception('not detected immutable error',e)
+
 def test_ref(value_of_prog):
     prog = '''\
     let swap = proc (x,y)
@@ -475,46 +490,60 @@ def test_all_by_variant(value_of_prog):
 
 def test_all():
     from sys import setrecursionlimit
-    from LET import value_of_prog
     setrecursionlimit(225)
     
+    from LET import value_of_prog
     print('LET')
     test_all_by_variant(value_of_prog)
+    
     from NAMELESS_LET import value_of_prog
     print('NAMELESS_LET')
     test_all_by_variant(value_of_prog)
+    
     from EXPLICIT_REFS import value_of_prog
     print('EXPLICIT_REFS')
     test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
-    print('Store_Passing_Refs')
+    
     from STORE_PASSING_LET import value_of_prog
+    print('Store_Passing_Refs')
     test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
+    
     from IMPLICIT_REFS import value_of_prog
     print('IMPLICIT_REFS')
     test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     test_ref(value_of_prog)
+    test_immutability(value_of_prog)
+    
     from LAZY_LET import value_of_prog
     print('LAZY_LET')
     test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
+    test_immutability(value_of_prog)
     test_ref(value_of_prog)
     test_swap(value_of_prog)
     test_laziness(value_of_prog)
     
-    from LET_cc import value_of_prog
     # this is necessary for LET_cc testing
     setrecursionlimit(2000) 
+    from LET_cc import value_of_prog
     print('LET_cc')
     test_all_by_variant(value_of_prog)
-    from LET_cc_data_struct import value_of_prog 
-    print('LET_cc_data_struct')
-    test_all_by_variant(value_of_prog)
+    
     from LET_cc_inline import value_of_prog 
     print('LET_cc_inline')
     test_all_by_variant(value_of_prog)
+    
+    from LET_cc_data_struct import value_of_prog 
+    print('LET_cc_data_struct')
+    test_all_by_variant(value_of_prog)
+    
+    from EXPLICIT_REFS_CC import value_of_prog
+    print('EXPLICIT_REFS_CC')
+    test_all_by_variant(value_of_prog)
+    test_sequence(value_of_prog)
     
     '''
     these tests registerized continuation interpreters properly iterative;

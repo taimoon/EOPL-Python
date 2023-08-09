@@ -10,13 +10,12 @@ def value_of_prog(prog,env = init_env(),parse = parser.parse):
 class EXPLICIT_REFS_Interpreter:
     def value_of_prog(self,prog,env = init_env(),parse = parser.parse):
         init_store()
-        value_of = self.value_of
-        return value_of(parse(prog), env)
+        return Let_Interpreter.value_of_prog(self,prog,env,parse)
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
         return Let_Interpreter.apply_proc(self,proc,args)
     
-    def value_of(self,expr, env):
+    def value_of(self,expr,env):
         value_of = self.value_of
         if isinstance(expr,Sequence):
             val = None
