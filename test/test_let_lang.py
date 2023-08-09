@@ -340,8 +340,14 @@ def test_letrec_multi(value_of_prog):
     smallest_div = lambda x : min([d for d in range(2,x+1) if x%d == 0])
     is_prime = lambda p: p == smallest_div(p)
     assert(value_of_prog(prog) == sum([i for i in range(2,5+1) if is_prime(i)]))
-    
-    prog = '''\
+
+def test_deep_letrec(value_of_prog,x=4):
+    '''
+    design to test imperative continuation interpreter doesn't consume too much stack;
+    x > 5 usually too deep for continuation to handle;
+    but shouldn't be a problem for imperative version
+    '''
+    prog = f'''\
         letrec
             add(x,y) = -(x,-(0,y))
             dec(x) = -(x,1)
@@ -354,9 +360,10 @@ def test_letrec_multi(value_of_prog):
                         equal?((odd x),1) => (sum_odd (dec x) (add x acm))
                         else (sum_odd (dec x) acm)
                         end
-                    in (sum_odd 6 0)'''
+                    in (sum_odd {x} 0)'''
     # value cannot be too big
-    ans = sum([i for i in range(6+1) if i % 2 != 0])
+    # 6 is too big for implicit_refs_cc
+    ans = sum([i for i in range(x+1) if i % 2 != 0])
     assert(value_of_prog(prog) == ans)
     
 def test_sequence(value_of_prog):
@@ -484,7 +491,7 @@ def test_all_by_variant(value_of_prog):
     
     test_letrec(value_of_prog)
     test_letrec_multi(value_of_prog)
-    
+    test_deep_letrec(value_of_prog)
     print('pass all test')
 
 
@@ -545,6 +552,13 @@ def test_all():
     test_all_by_variant(value_of_prog)
     test_sequence(value_of_prog)
     
+    from IMPLICIT_REFS_CC import value_of_prog
+    print('IMPLICIT_REFS_CC')
+    test_all_by_variant(value_of_prog)
+    test_sequence(value_of_prog)
+    test_ref(value_of_prog)
+    test_immutability(value_of_prog)
+    
     '''
     these tests registerized continuation interpreters properly iterative;
     by limiting the recursion call stack;
@@ -566,6 +580,7 @@ def test_all():
         from LET_cc_imperative import value_of_prog 
         print('LET_cc_imperative')
         test_all_by_variant(value_of_prog)
+        test_deep_letrec(value_of_prog,100)
         print("LET_cc_imperative doesnt exceed stack depth limit of 200")
     except RecursionError as e:
         print(f'LET_cc_imperative: {e}')
