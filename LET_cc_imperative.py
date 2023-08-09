@@ -29,7 +29,7 @@ class Registers:
 reg = Registers()
 
 def trampoline():
-    while not (reg.pc is False):
+    while reg.pc is not False:
         reg.pc()
     return reg.val
 

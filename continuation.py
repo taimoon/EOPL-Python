@@ -38,6 +38,7 @@ class Args_Cont(Cont):
     env:Env
     exps:list
     acm_vals:list
+    immutability:bool = False
     
 @dataclass
 class Operand_Cont(Cont):
@@ -58,5 +59,33 @@ class Try_Cont(Cont):
 @dataclass
 class Raise_Cont(Cont):
     pass
+@dataclass
+class Seq_Cont(Cont):
+    exps:tuple
+    env:Env
 
+@dataclass
+class NewRef_Cont(Cont):
+    pass
 
+@dataclass
+class DeRef_Cont(Cont):
+    pass
+
+@dataclass
+class SetRef_Cont1(Cont):
+    exp:None
+    env:Env
+
+@dataclass
+class SetRef_Cont2(Cont):
+    loc:int
+
+@dataclass
+class Assign_Cont(Cont):
+    env:Env
+    var:str
+
+@dataclass
+class Ref_Cont(Cont):
+    pass
