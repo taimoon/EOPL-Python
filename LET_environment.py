@@ -6,7 +6,7 @@ from LET_ast_node import (
     Primitve_Implementation,
 )
 
-from LET_env.assoc_environment import (
+from LET_env.ribcage_environment import (
     Environment,
     Repeated_Binding,
     is_nameless_env,

@@ -40,7 +40,7 @@ class Environment:
     
     def lookup(self,var:str):
         if self.is_empty():
-            raise NameError
+            raise NameError(var)
         elif var not in self.current_frame:
             return self.enclosed_env.lookup(var)
         else:

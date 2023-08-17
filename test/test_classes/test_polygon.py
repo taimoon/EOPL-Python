@@ -100,3 +100,18 @@ def test_polygon(value_of_prog):
     res = value_of_prog(prog)
     ans = List(17*17,17,17)
     assert(str(res) == str(ans))
+
+    prog = f'''{cls_prog}
+    let sqr = new Square (3)
+    tri = new Triangle (2,3,5)
+    in list(
+        instanceof sqr Polygon,
+        instanceof sqr Rect,
+        instanceof sqr Triangle,
+        instanceof tri Polygon,
+        instanceof tri Rect
+        )
+    '''
+    res = value_of_prog(prog)
+    ans = List(True,True,False,True,False)
+    assert(str(res) == str(ans))

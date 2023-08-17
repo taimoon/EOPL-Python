@@ -647,6 +647,19 @@ def p_class_other(p):
             print(tuple(p[1:]))
             raise NotImplementedError
 
+def p_field_ref(p):
+    '''
+    expr : FIELDREF expr ID
+        | FIELDSET expr ID '=' expr
+    '''
+    match tuple(p)[1:]:
+        case ('fieldref',obj_exp,field_name):
+            p[0] = Field_Ref(obj_exp,field_name)
+        case ('fieldset',obj_exp,field_name,'=',exp):
+            p[0] = Field_Set(obj_exp,field_name,exp)
+        case _:
+            raise NotImplementedError(tuple(p)[1:])
+
 # Error rule for syntax errors
 def p_error(p):
     print(p)

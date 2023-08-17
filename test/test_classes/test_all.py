@@ -9,6 +9,7 @@ def test_all_by_variant(value_of_prog):
         test_super
     )
     from .test_queue import test_queue_class
+    from .test_class_ref import test_class_ref
     test_simple_class(value_of_prog)
     test_leaf_class(value_of_prog)
     test_color_class(value_of_prog)
@@ -17,9 +18,16 @@ def test_all_by_variant(value_of_prog):
     test_class_scope2(value_of_prog)
     test_super(value_of_prog)
     test_queue_class(value_of_prog)
+    
+    test_class_ref(value_of_prog)
 
 def test_all():
     print("test class")
     from CLASSES import value_of_prog
     test_all_by_variant(value_of_prog)
     print("end of class test")
+    # from CLASSESv2 import value_of_prog
+    # print("test class")
+    # test_all_by_variant(value_of_prog)
+    # print("end of class test")
+    

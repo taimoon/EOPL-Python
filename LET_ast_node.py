@@ -478,3 +478,14 @@ class Self_Exp:
 class Instance_Exp:
     exp:None
     cls_name:str
+    
+@dataclass
+class Field_Ref:
+    obj_exp:None
+    field_name:str
+
+@dataclass
+class Field_Set:
+    obj_exp:None
+    field_name:str
+    exp:None

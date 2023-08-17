@@ -5,12 +5,7 @@ List = ast.Pair.list_to_pair
 parse = parser.parse
 
 def test_queue_class(value_of_prog):
-    from LET_parser import parser
-    from CLASSES import value_of_prog
-    import LET_ast_node as ast
-    
     List = ast.Pair.list_to_pair
-    parse = parser.parse
     queue_prog = '''
     class Queue extends object
     field tail

@@ -74,6 +74,8 @@ reserved = {
    'extends' : 'EXTENDS',
    'field' : 'FIELD',
    'instanceof':'INSTANCEOF',
+   'fieldref': 'FIELDREF',
+   'fieldset': 'FIELDSET',
    
 }
 

@@ -5,13 +5,17 @@ from LET_environment import (
     apply_env,
     extend_env_from_pairs
 )
-from memory import init_store,newref
+from memory import init_store,newref,deref
 from LET_ast_node import *
 from object import (
     Object,Method,
     find_method,
     init_class_env,
-    new_object
+    new_object,
+    super_name,
+    instanceof,
+    fieldref,
+    fieldset,
 )
 
 def value_of_prog(prog, env = None, parse = parser.parse):
@@ -48,7 +52,7 @@ class CLASSES_Interpreter:
         elif isinstance(expr,Method_Call_Exp):
             args = tuple(value_of(exp,env) for exp in expr.operands)
             obj:Object = value_of(expr.obj_exp,env)
-            meth = find_method(obj.class_name,expr.method_name)
+            meth = find_method(obj.name,expr.method_name)
             apply_method = self.apply_method
             return apply_method(meth,obj,args)
         elif isinstance(expr,Super_Call_Exp):
@@ -60,12 +64,19 @@ class CLASSES_Interpreter:
         elif isinstance(expr,New_Obj_Exp):
             args = tuple(value_of(exp,env) for exp in expr.operands)
             obj = new_object(expr.cls_name)
-            meth:Method = find_method(obj.class_name,'initialize')
+            meth:Method = find_method(obj.name,'initialize')
             self.apply_method(meth,obj,args)
             return obj
         elif isinstance(expr,Instance_Exp):
             obj = value_of(expr.exp,env)
-            return (isinstance(obj,Object) and obj.class_name == expr.cls_name)
+            return (isinstance(obj,Object) and instanceof(obj.name,expr.cls_name))
+        elif isinstance(expr,Field_Ref):
+            obj:Object = value_of(expr.obj_exp,env)
+            return deref(fieldref(obj,expr.field_name))
+        elif isinstance(expr,Field_Set):
+            obj:Object = value_of(expr.obj_exp,env)
+            val = value_of(expr.exp,env)
+            return fieldset(obj,expr.field_name,val)
         else:
             return IMPLICIT_REFS_Interpreter.value_of(self,expr,env)
 
@@ -77,7 +88,7 @@ class CLASSES_Interpreter:
         
         env = change_init_env(init_env())
         vars = meth.field_names + ('%self','%super')
-        vals = obj.fields + (obj,meth.super_name)
+        vals = obj.fields + (obj,super_name(meth))
         env = extend_env_from_pairs(vars,vals,env)
         env = extend_env_from_pairs(meth.params,tuple(map(newref,args)),env)
         return value_of(meth.body,env)
