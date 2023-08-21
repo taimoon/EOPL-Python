@@ -23,18 +23,8 @@ def value_of_prog(prog, env = None, parse = parser.parse):
         env = CLASSES_Interpreter().init_env()
     return CLASSES_Interpreter().value_of_prog(prog,env,parse)
 
-class CLASSES_Interpreter:
+class CLASSES_Interpreter(IMPLICIT_REFS_Interpreter):
     'CLASSES extends IMPLICIT_REFS'
-    
-    def init_env(self):
-        return IMPLICIT_REFS_Interpreter.init_env(self)
-    
-    def change_init_env(self,env:Env):
-        return IMPLICIT_REFS_Interpreter.change_init_env(self,env)
-    
-    def apply_proc(self,proc,args):
-        return IMPLICIT_REFS_Interpreter.apply_proc(self,proc,args)
-    
     def value_of_prog(self,prog, env = None, parse = parser.parse):
         prog = parse(prog)
         init_store()
@@ -78,7 +68,7 @@ class CLASSES_Interpreter:
             val = value_of(expr.exp,env)
             return fieldset(obj,expr.field_name,val)
         else:
-            return IMPLICIT_REFS_Interpreter.value_of(self,expr,env)
+            return super().value_of(expr,env)
 
     def apply_method(self,meth:Method,obj:Object,args:tuple):
         'core of CLASSES lang'
