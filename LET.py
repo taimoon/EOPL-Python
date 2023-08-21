@@ -48,60 +48,58 @@ class Let_Interpreter:
     def value_of(self,expr,env):
         value_of = self.value_of
         apply_proc = self.apply_proc
-        if isinstance(expr, Const_Exp):
-            return expr.val
-        elif isinstance(expr, Var_Exp):
-            return apply_env(env, expr.var)
-        elif isinstance(expr, Diff_Exp):
-            return value_of(expr.left,env) - value_of(expr.right,env)
-        elif isinstance(expr, Zero_Test_Exp):
-            return value_of(expr.exp,env) == 0
-        elif isinstance(expr, Branch):
-            if value_of(expr.pred,env) is True:
-                return value_of(expr.conseq,env)
-            else:
-                return value_of(expr.alter,env)
-        elif isinstance(expr, Proc_Exp):
-            # return Proc_Val(expr.params,expr.body,empty_env()) # dynamic scoping
-            return Proc_Val(expr.params,expr.body,env) # lexical scoping
-        elif isinstance(expr, App_Exp):
-            proc = value_of(expr.operator,env)
-            if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
-                args = value_of(expr.operand[0].list_expr,env)
-            else:
-                args = map(lambda o : value_of(o, env), expr.operand)
-            return apply_proc(proc,args)
-        elif isinstance(expr, Rec_Proc):
-            return value_of(expr.expr, extend_env_rec_multi(expr.var,expr.params,expr.body,env))
-        elif isinstance(expr,Pair_Exp):
-            return value_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env)
-        elif isinstance(expr,Unpair_Exp):
-            pair:Pair = value_of(expr.pair_exp,env)
-            vars = expr.left,expr.right
-            vals = pair.car,pair.cdr
-            env = extend_env_from_pairs(vars,vals,env)
-            return value_of(expr.expr,env)
-        # Derived Form
-        elif isinstance(expr,Let_Exp):
-            # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
-            # as derived form
-            return value_of(App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps),env)
-        elif isinstance(expr,Let_Star_Exp):
-            return value_of(expand_let_star(expr),env)
-        elif isinstance(expr,Conditional):
-            return value_of(expand_conditional(expr),env)
-        elif isinstance(expr, Primitive_Exp):
-            return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env)
-        elif isinstance(expr,List):
-            return value_of(App_Exp(Var_Exp('list'),expr.exps),env)
-        elif isinstance(expr,Unpack_Exp):
-            if expr.vars is None or expr.expr is None:
-                raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-            return value_of(App_Exp(operator = Proc_Exp(expr.vars,expr.expr),
-                                    operand  = (Unpack_Exp(None,expr.list_expr,None),))
-                            ,env)
-        elif isinstance(expr,Null_Exp):
-            return value_of(App_Exp(Var_Exp('null?'),(expr.expr,)),env)
-        else:
-            raise Exception("Uknown LET expression type", expr)
+        match expr:
+            case Const_Exp(val):
+                return val
+            case Var_Exp(var):
+                return apply_env(env,expr.var)
+            case Diff_Exp(left,right):
+                return value_of(left,env) - value_of(right,env) 
+            case Zero_Test_Exp(exp):
+                return value_of(exp,env) == 0
+            case Branch(pred,conseq,alter):
+                if value_of(pred,env) is True:
+                    return value_of(conseq,env)
+                else:
+                    return value_of(alter,env)
+            case Proc_Exp(params,body):
+                return Proc_Val(params,body,env)
+            case App_Exp(operator,operand):
+                proc = value_of(operator,env)
+                if len(operand) == 1 and isinstance(operand[0],Unpack_Exp):
+                    args = value_of(operand[0].list_expr,env)
+                else:
+                    args = map(lambda o : value_of(o, env), operand)
+                return apply_proc(proc,args)
+            case Rec_Proc(var,params,body,exp):
+                return value_of(exp, extend_env_rec_multi(var,params,body,env))
+            case Pair_Exp(left,right):
+                return value_of(App_Exp(Var_Exp('cons'),(left,right)),env)
+            case Unpair_Exp(left,right,pair_exp,exp):
+                pair:Pair = value_of(pair_exp,env)
+                vars = left,right
+                vals = pair.car,pair.cdr
+                env = extend_env_from_pairs(vars,vals,env)
+                return value_of(expr.expr,env)
+            # Derived Form
+            case Let_Exp(vars,exps,body):
+                return value_of(App_Exp(Proc_Exp(vars,body),exps),env)
+            case Let_Star_Exp(vars,exps,body):
+                return value_of(expand_let_star(expr),env)
+            case Conditional():
+                return value_of(expand_conditional(expr),env)
+            case Primitive_Exp(op,exps):
+                return value_of(App_Exp(Var_Exp(op),exps),env)
+            case List(exps):
+                return value_of(App_Exp(Var_Exp('list'),exps),env)
+            case Unpack_Exp(vars,list_expr,exp):
+                if vars is None or expr is None:
+                    raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
+                return value_of(App_Exp(operator = Proc_Exp(vars,exp),
+                                        operand  = (Unpack_Exp(None,list_expr,None),))
+                                ,env)
+            case Null_Exp(exp):
+                return value_of(App_Exp(Var_Exp('null?'),(exp,)),env)
+            case _:
+                raise Exception("Uknown LET expression type", expr)
 
