@@ -1,15 +1,10 @@
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import (
-        Environment,
-        empty_env,
         init_env,
         apply_env,
         extend_env_from_pairs,
         extend_env_rec_multi,
-        lookup_qualified_var,
-        lookup_module_name,
-        extend_env_with_module,
     )
 
 def value_of_prog(prog,env = init_env(),parse = parser.parse):

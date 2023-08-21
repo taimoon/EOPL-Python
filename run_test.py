@@ -1,5 +1,7 @@
 if __name__ == '__main__':
-    from test import (test_let_lang,
+    from test import (
+        test_let_lang,
+        test_exception,
         test_typed_modules,
         test_modules,
         test_class,
@@ -7,6 +9,7 @@ if __name__ == '__main__':
     )
     
     test_let_lang.test_all()
+    test_exception.test_all()
     test_checked.test_all()
     test_modules.test_all()
     test_typed_modules.test_all()

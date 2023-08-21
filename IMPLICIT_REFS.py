@@ -24,6 +24,9 @@ def value_of_prog(prog, env = None, parse = parser.parse):
         env = IMPLICIT_REFS_Interpreter().init_env()
     return IMPLICIT_REFS_Interpreter().value_of_prog(prog,env,parse)
 
+class Immutable_Modify_Error(Exception):
+    pass
+
 class IMPLICIT_REFS_Interpreter:
     def init_env(self):
         from LET_environment import init_env
@@ -82,7 +85,7 @@ class IMPLICIT_REFS_Interpreter:
         elif isinstance(expr,Assign_Exp):
             res = apply_env(env,expr.var)
             if isinstance(res,Immutable):
-                raise Exception(f"error : attempt to modify immutable variable {expr.var}")
+                raise Immutable_Modify_Error(f"error : attempt to modify immutable variable {expr.var}")
             setref(res,value_of(expr.expr,env))
         # derived form
         elif isinstance(expr,Letmutable_Exp):

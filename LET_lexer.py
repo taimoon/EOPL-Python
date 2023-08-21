@@ -45,6 +45,10 @@ reserved = {
    'setcar' : 'SETCAR',
    'setcdr' : 'SETCDR',
    
+   'try' : 'TRY',
+   'catch' : 'CATCH',
+   'raise' : 'RAISE',
+   
    'void' : 'VOID',
    'int' : 'INT',
    'bool' : 'BOOL',
@@ -70,10 +74,12 @@ reserved = {
    'extends' : 'EXTENDS',
    'field' : 'FIELD',
    'instanceof':'INSTANCEOF',
+   'fieldref': 'FIELDREF',
+   'fieldset': 'FIELDSET',
    
 }
 
-tokens = "NUMBER ID RIGHTARROW TYPEARROW".split() + list(reserved.values())
+tokens = "NUMBER ID RIGHTARROW TYPEARROW STRING".split() + list(reserved.values())
 
 # literals
 literals = r'-+*/,=();{}:?[].'
@@ -91,6 +97,11 @@ def t_ID(t):
 def t_NUMBER(t):
     r'\d+'
     t.value = int(t.value)    
+    return t
+
+def t_STRING(t):
+    r'"[^"]*"'
+    t.value = str(t.value[1:-1])
     return t
 
 ## INFORMATIONAL OPERATIONS

@@ -49,7 +49,6 @@ def value_of_k(expr,env,cc):
         zero_cc = lambda val: apply_cont(cc,val == 0)
         return value_of_k(expr.exp,env,zero_cc)
     elif isinstance(expr, Branch):
-        expr.pred, expr.conseq,expr.alter
         def branch_cc(val):
             if val == True:
                 return value_of_k(expr.conseq,env,cc)

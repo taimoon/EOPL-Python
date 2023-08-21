@@ -82,6 +82,10 @@ def p_number(p):
     "expr : NUMBER"
     p[0] = Const_Exp(p[1])
 
+def p_str(p):
+    "expr : STRING"
+    p[0] = Const_Exp(p[1])
+
 def p_var_exp(p):
     '''expr : FROM ID TAKE ID
         | ID '.' ID
@@ -353,6 +357,20 @@ def p_memory_exp(p):
             p[0] = NewRef(expr)
         case ('REF', '(',expr,')'):
             p[0] = Ref(expr)
+
+# Exception Handling
+def p_exception_exp(p):
+    '''
+    expr : TRY expr CATCH '(' ID ')' expr
+        | RAISE expr
+    '''
+    match tuple(p)[1:]:
+        case ('try',exp,'catch','(',var,')',handler):
+            p[0] = Try_Exp(exp,var,handler)
+        case ('raise',exp):
+            p[0] = Raise_Exp(exp)
+        case _:
+            raise NotImplementedError(tuple(p)[1:])
 
 # Type
 def p_type(p):
@@ -628,6 +646,19 @@ def p_class_other(p):
         case _:
             print(tuple(p[1:]))
             raise NotImplementedError
+
+def p_field_ref(p):
+    '''
+    expr : FIELDREF expr ID
+        | FIELDSET expr ID '=' expr
+    '''
+    match tuple(p)[1:]:
+        case ('fieldref',obj_exp,field_name):
+            p[0] = Field_Ref(obj_exp,field_name)
+        case ('fieldset',obj_exp,field_name,'=',exp):
+            p[0] = Field_Set(obj_exp,field_name,exp)
+        case _:
+            raise NotImplementedError(tuple(p)[1:])
 
 # Error rule for syntax errors
 def p_error(p):

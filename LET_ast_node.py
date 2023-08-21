@@ -295,6 +295,16 @@ class Thunk:
     expr:typing.Any
     env:typing.Any
 
+# CONTINUATION
+@dataclass
+class Try_Exp:
+    exp:None
+    var:None
+    handler:None
+
+@dataclass
+class Raise_Exp:
+    exp:None
 
 # TYPE
 @dataclass
@@ -468,3 +478,14 @@ class Self_Exp:
 class Instance_Exp:
     exp:None
     cls_name:str
+    
+@dataclass
+class Field_Ref:
+    obj_exp:None
+    field_name:str
+
+@dataclass
+class Field_Set:
+    obj_exp:None
+    field_name:str
+    exp:None
