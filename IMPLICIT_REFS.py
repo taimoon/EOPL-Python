@@ -62,33 +62,34 @@ class IMPLICIT_REFS_Interpreter:
 
     def value_of(self,expr, env):
         value_of = self.value_of
-        if isinstance(expr, Var_Exp):
-            res = apply_env(env, expr.var)
-            if isinstance(res,Immutable):
-                return res.val
-            else:
-                return deref(res)
-        elif isinstance(expr, Rec_Proc):
-            return value_of(expr.expr, extend_env_rec_ref(expr.var,expr.params,expr.body,env))
-        elif isinstance(expr,Let_Exp):
-            # introduce immutability
-            vals = tuple(Immutable(value_of(exp,env)) for exp in expr.exps)
-            env = extend_env_from_pairs(expr.vars,vals,env)
-            return value_of(expr.body,env)
-        # Statement
-        elif isinstance(expr,Ref):
-            if not isinstance(expr.var,Var_Exp):
-                raise Exception("The argument passed to ref is not a variable")
-            var = expr.var.var
-            loc = apply_env(env,var)
-            return loc
-        elif isinstance(expr,Assign_Exp):
-            res = apply_env(env,expr.var)
-            if isinstance(res,Immutable):
-                raise Immutable_Modify_Error(f"error : attempt to modify immutable variable {expr.var}")
-            setref(res,value_of(expr.expr,env))
-        # derived form
-        elif isinstance(expr,Letmutable_Exp):
-            return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps), env)
-        else:
-            return EXPLICIT_REFS_Interpreter.value_of(self,expr,env)
+        match expr:
+            case Var_Exp(var):
+                res = apply_env(env, var)
+                if isinstance(res,Immutable):
+                    return res.val
+                else:
+                    return deref(res)
+            case Rec_Proc(vars,params,body,exp):
+                return value_of(exp, extend_env_rec_ref(vars,params,body,env))
+            case Let_Exp(vars,exps,body):
+                # introduce immutability
+                vals = tuple(Immutable(value_of(exp,env)) for exp in exps)
+                env = extend_env_from_pairs(vars,vals,env)
+                return value_of(body,env)
+            # Statement
+            case Ref(var):
+                if not isinstance(var,Var_Exp):
+                    raise Exception("The argument passed to ref is not a variable")
+                var = var.var
+                loc = apply_env(env,var)
+                return loc
+            case Assign_Exp(var,exp):
+                res = apply_env(env,var)
+                if isinstance(res,Immutable):
+                    raise Immutable_Modify_Error(f"error : attempt to modify immutable variable {var}")
+                setref(res,value_of(exp,env))
+            # derived form
+            case Letmutable_Exp(vars,exps,body):
+                return value_of(App_Exp(Proc_Exp(vars, body), exps), env)
+            case _:
+                return EXPLICIT_REFS_Interpreter.value_of(self,expr,env)

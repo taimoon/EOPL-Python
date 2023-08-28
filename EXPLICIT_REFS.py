@@ -17,18 +17,20 @@ class EXPLICIT_REFS_Interpreter:
     
     def value_of(self,expr,env):
         value_of = self.value_of
-        if isinstance(expr,Sequence):
-            val = None
-            for exp in expr.exps:
+        match expr:
+            case Sequence(exps):
+                val = None
+                for exp in exps:
+                    val = value_of(exp,env)
+                return val
+            case NewRef(exp):
+                return newref(value_of(exp,env))
+            case DeRef(exp):
+                return deref(value_of(exp,env))
+            case SetRef(loc,exp):
+                ref = value_of(loc,env)
                 val = value_of(exp,env)
-            return val
-        elif isinstance(expr,NewRef):
-            return newref(value_of(expr.expr,env))
-        elif isinstance(expr,DeRef):
-            return deref(value_of(expr.expr,env))
-        elif isinstance(expr,SetRef):
-            ref = value_of(expr.loc,env)
-            val = value_of(expr.expr,env)
-            return setref(ref,val)
-        else:
-            return Let_Interpreter.value_of(self,expr,env)
+                return setref(ref,val)
+            case _:
+                return Let_Interpreter.value_of(self,expr,env)
+    
