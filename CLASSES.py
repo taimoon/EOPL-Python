@@ -35,40 +35,40 @@ class CLASSES_Interpreter(IMPLICIT_REFS_Interpreter):
     
     def value_of(self,expr,env):
         value_of = self.value_of
-        if isinstance(expr,Self_Exp):
-            res = apply_env(env,"%self")
-            assert(isinstance(res,Object))
-            return res
-        elif isinstance(expr,Method_Call_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj:Object = value_of(expr.obj_exp,env)
-            meth = find_method(obj.name,expr.method_name)
-            apply_method = self.apply_method
-            return apply_method(meth,obj,args)
-        elif isinstance(expr,Super_Call_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj:Object = apply_env(env,'%self')
-            super_meth:Method = find_method(apply_env(env,'%super'),expr.method_name)
-            apply_method = self.apply_method
-            return apply_method(super_meth,obj,args)
-        elif isinstance(expr,New_Obj_Exp):
-            args = tuple(value_of(exp,env) for exp in expr.operands)
-            obj = new_object(expr.cls_name)
-            meth:Method = find_method(obj.name,'initialize')
-            self.apply_method(meth,obj,args)
-            return obj
-        elif isinstance(expr,Instance_Exp):
-            obj = value_of(expr.exp,env)
-            return (isinstance(obj,Object) and instanceof(obj.name,expr.cls_name))
-        elif isinstance(expr,Field_Ref):
-            obj:Object = value_of(expr.obj_exp,env)
-            return deref(fieldref(obj,expr.field_name))
-        elif isinstance(expr,Field_Set):
-            obj:Object = value_of(expr.obj_exp,env)
-            val = value_of(expr.exp,env)
-            return fieldset(obj,expr.field_name,val)
-        else:
-            return super().value_of(expr,env)
+        match expr:
+            case Self_Exp():
+                res = apply_env(env,"%self")
+                return res
+            case Method_Call_Exp(obj_exp,method_name,operands):
+                args = tuple(value_of(exp,env) for exp in operands)
+                obj:Object = value_of(obj_exp,env)
+                meth = find_method(obj.name,method_name)
+                apply_method = self.apply_method
+                return apply_method(meth,obj,args)
+            case Super_Call_Exp(method_name,operands):
+                args = tuple(value_of(exp,env) for exp in operands)
+                obj:Object = apply_env(env,'%self')
+                super_meth:Method = find_method(apply_env(env,'%super'),method_name)
+                apply_method = self.apply_method
+                return apply_method(super_meth,obj,args)
+            case New_Obj_Exp(cls_name,operands):
+                args = tuple(value_of(exp,env) for exp in operands)
+                obj = new_object(cls_name)
+                meth:Method = find_method(obj.name,'initialize')
+                self.apply_method(meth,obj,args)
+                return obj
+            case Instance_Exp(exp,cls_name):
+                obj = value_of(exp,env)
+                return (isinstance(obj,Object) and instanceof(obj.name,cls_name))
+            case Field_Ref(obj_exp,field_name):
+                obj:Object = value_of(obj_exp,env)
+                return deref(fieldref(obj,field_name))
+            case Field_Set(obj_exp,field_name,exp):
+                obj:Object = value_of(obj_exp,env)
+                val = value_of(exp,env)
+                return fieldset(obj,field_name,val)
+            case _:
+                return super().value_of(expr,env)
 
     def apply_method(self,meth:Method,obj:Object,args:tuple):
         'core of CLASSES lang'
