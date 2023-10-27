@@ -28,7 +28,7 @@ class Modules_Interpreter:
         else:
             return value_of(prog,env)
     
-    def apply_primitive(self,prim:Primitive_Exp,args):
+    def apply_primitive(self,prim:Primitive,args):
         return Let_Interpreter.apply_primitive(self,prim,args)
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
@@ -49,11 +49,11 @@ class Modules_Interpreter:
             env = extend_env_with_module(module.name,bindings,env)
         return env
 
-    def let_exp_to_env(self,exp:Let_Exp|Let_Star_Exp|Rec_Proc,env:Environment):
+    def let_exp_to_env(self,exp:Let|Let_Star|Rec_Proc,env:Environment):
         value_of = self.value_of
-        if isinstance(exp,Let_Star_Exp):
+        if isinstance(exp,Let_Star):
             return self.let_exp_to_env(expand_let_star(exp),env)
-        elif isinstance(exp,Let_Exp):
+        elif isinstance(exp,Let):
             vals = tuple(value_of(exp,env) for exp in exp.exps)
             return extend_env_from_pairs(exp.vars,vals,env)
         elif isinstance(exp,Rec_Proc):

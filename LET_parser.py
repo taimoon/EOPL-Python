@@ -32,7 +32,7 @@ def p_application(p):
     '''
     match tuple(p[1:]):
         case ('(',expr_list,')'):
-            p[0] = App_Exp(expr_list[0],expr_list[1:])
+            p[0] = Apply(expr_list[0],expr_list[1:])
         case (x,xs):
             p[0] = (x,) + xs
         case x:
@@ -80,11 +80,11 @@ def p_params_opt(p):
         
 def p_number(p):
     "expr : NUMBER"
-    p[0] = Const_Exp(p[1])
+    p[0] = Const(p[1])
 
 def p_str(p):
     "expr : STRING"
-    p[0] = Const_Exp(p[1])
+    p[0] = Const(p[1])
 
 def p_var_exp(p):
     '''expr : FROM ID TAKE ID
@@ -97,7 +97,7 @@ def p_var_exp(p):
         case (name,'.',var):
             p[0] = Qualified_Var_Exp(name,var)
         case (name,):
-            p[0] = Var_Exp(name)
+            p[0] = Var(name)
 
 def p_null(p):
     # TODO : ambiguous grammar
@@ -107,9 +107,9 @@ def p_null(p):
     '''
     match tuple(p[1:]):
         case (x,'(',t,')'):
-            p[0] = Const_Exp(NULL(t))
+            p[0] = Const(NULL(t))
         case (x,):
-            p[0] = Const_Exp(NULL(No_Type()))
+            p[0] = Const(NULL(No_Type()))
 
 def p_neg_exp(p):
     # neg_exp allows different interpretation of '-' for the purpose of testing
@@ -119,7 +119,7 @@ def p_neg_exp(p):
         case (op,'(',left ,',' ,right,')'):
             p[0] = Diff_Exp(left,right)
         case (op, expr):
-            p[0] = Diff_Exp(Const_Exp(0), expr)
+            p[0] = Diff_Exp(Const(0), expr)
 
 def p_pair_exp(p):
     '''
@@ -150,11 +150,11 @@ def p_primitive_exp(p):
             p[0] = Null_Exp(expr)
         case (op,'(',left ,',' ,right,')'):
             assert(isinstance(op,Bi_Op))
-            p[0] = Primitive_Exp(op.op,(left,right))
+            p[0] = Primitive(op.op,(left,right))
         case (op,'(', expr ,')') if isinstance(op,Unary_Op):
-            p[0] = Primitive_Exp(op.op,(expr,))
+            p[0] = Primitive(op.op,(expr,))
         case (op,'(', expr ,')'):
-            p[0] = Primitive_Exp(op,expr)
+            p[0] = Primitive(op,expr)
 
 def p_unary_op(p):
     """unary_op : ZERO_TEST
@@ -235,7 +235,7 @@ def p_let_exp(p):
     """
         expr : LET_HEADER IN expr
     """
-    p[0]:Let_Exp|Let_Star_Exp|Letmutable_Exp = p[1]
+    p[0]:Let|Let_Star|Letmutable = p[1]
     p[0].body = p[3]
 
 def p_let_header(p):
@@ -250,11 +250,11 @@ def p_let_header(p):
     vars = tuple(map(lambda t:t[0], pairs))
     vals = tuple(map(lambda t:t[1], pairs))
     if let_token == 'LET':
-        p[0] =  Let_Exp(vars,vals,None)
+        p[0] =  Let(vars,vals,None)
     elif let_token == 'LET_STAR':
-        p[0] =  Let_Star_Exp(vars,vals,None)
+        p[0] =  Let_Star(vars,vals,None)
     else:
-        p[0] =  Letmutable_Exp(vars,vals,None)
+        p[0] =  Letmutable(vars,vals,None)
 
 def p_let_pairs(p):
     '''
@@ -348,7 +348,7 @@ def p_memory_exp(p):
     p[1] = reserved[p[1]]
     match tuple(p)[1:]:
         case ('SET', var, '=', expr):
-            p[0] = Assign_Exp(var,expr)
+            p[0] = Assign(var,expr)
         case ('SETREF','(', loc, ',', expr,')'):
             p[0] = SetRef(loc,expr)
         case ('DEREF', '(',expr,')'):
@@ -366,9 +366,9 @@ def p_exception_exp(p):
     '''
     match tuple(p)[1:]:
         case ('try',exp,'catch','(',var,')',handler):
-            p[0] = Try_Exp(exp,var,handler)
+            p[0] = Try(exp,var,handler)
         case ('raise',exp):
-            p[0] = Raise_Exp(exp)
+            p[0] = Raise(exp)
         case _:
             raise NotImplementedError(tuple(p)[1:])
 

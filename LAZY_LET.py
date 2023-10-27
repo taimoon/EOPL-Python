@@ -19,7 +19,7 @@ class LAZY_Let_Interpreter(IMPLICIT_REFS_Interpreter):
 
     def value_of_operand(self,expr, env):
         'implementing pass-by-reference'
-        if isinstance(expr,Var_Exp):
+        if isinstance(expr,Var):
             return apply_env(env,expr.var)
         else:
             return newref(Thunk(expr,env))
@@ -33,7 +33,7 @@ class LAZY_Let_Interpreter(IMPLICIT_REFS_Interpreter):
         value_of_operand = self.value_of_operand
         apply_proc = self.apply_proc
         match expr:
-            case Var_Exp(var):
+            case Var(var):
                 res = apply_env(env, var)
                 if isinstance(res,Immutable):
                     return res.val
@@ -41,7 +41,7 @@ class LAZY_Let_Interpreter(IMPLICIT_REFS_Interpreter):
                     return value_of_thunk(deref(res))
                 else:
                     return deref(res)
-            case App_Exp(operator,operand):
+            case Apply(operator,operand):
                 proc = value_of(operator,env)
                 if len(operand) == 1 and isinstance(operand[0],Unpack_Exp):
                     # unpack doesn't pass variable by reference

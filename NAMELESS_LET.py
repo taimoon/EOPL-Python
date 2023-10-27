@@ -22,14 +22,14 @@ def value_of_prog(prog:str, env = init_env(), parse = parser.parse):
 
 def translation_of(expr,static_env):
     match expr:
-        case Const_Exp():
+        case Const():
             return expr
-        case Var_Exp(var):
+        case Var(var):
             return Nameless_Var_Exp(apply_senv(static_env, var))
         case Diff_Exp(left,right):
             return Diff_Exp(translation_of(left,static_env),translation_of(right,static_env))
-        case Zero_Test_Exp(e):
-            return Zero_Test_Exp(translation_of(e,static_env))
+        case Zero_Test(e):
+            return Zero_Test(translation_of(e,static_env))
         case Branch(pred,conseq,alter):
             return Branch(
                 translation_of(pred,static_env),
@@ -39,7 +39,7 @@ def translation_of(expr,static_env):
         case Proc_Exp(params,body,types):
             new_senv = extend_senv_vars(params,static_env)
             return Nameless_Proc_Exp(translation_of(body,new_senv))
-        case App_Exp(operator,operand):
+        case Apply(operator,operand):
             proc = translation_of(operator,static_env)
             if operand != () and isinstance(operand[0],Unpack_Exp):
                 args = translation_of(operand[0].list_expr,static_env)
@@ -47,28 +47,28 @@ def translation_of(expr,static_env):
             else:
                 args = map(lambda o : translation_of(o, static_env), operand)
                 args = tuple(args)
-            return App_Exp(proc,args)
+            return Apply(proc,args)
         case Rec_Proc(var,params,body,expr,res_types,arg_types):
             new_senv = extend_senv_vars(var,static_env)
             translate = lambda params,body: translation_of(Proc_Exp(params,body),new_senv)
             exps = tuple(translate(*args) for args in zip(params,body))
             return Nameless_Rec_Exp(exps,translation_of(expr,new_senv))
-        case Let_Exp(vars,exps,body):
+        case Let(vars,exps,body):
             new_senv = extend_senv_vars(vars,static_env)
             exps = tuple(translation_of(exp,static_env) for exp in exps)
             return Nameless_Let_Exp(exps,translation_of(body,new_senv))
-        case Primitive_Exp(op,exps):
-            return translation_of(App_Exp(Var_Exp(op),exps),static_env)
+        case Primitive(op,exps):
+            return translation_of(Apply(Var(op),exps),static_env)
         case List(exps):
-            return translation_of(App_Exp(Var_Exp('list'),tuple(exps)),static_env)
+            return translation_of(Apply(Var('list'),tuple(exps)),static_env)
         case Pair_Exp(left,right):
-            return translation_of(App_Exp(Var_Exp('cons'),(left,right)),static_env)
-        case Let_Star_Exp():
+            return translation_of(Apply(Var('cons'),(left,right)),static_env)
+        case Let_Star():
             return translation_of(expand_let_star(expr),static_env)
         case Conditional():
             return translation_of(expand_conditional(expr),static_env)
         case Unpack_Exp(vars,list_expr,expr):
-            return translation_of(App_Exp(Proc_Exp(vars,expr),
+            return translation_of(Apply(Proc_Exp(vars,expr),
                                         (Unpack_Exp(None,list_expr,None),)),
                                 static_env)
         case _:
@@ -116,7 +116,7 @@ class Nameless_Let_Interpreter:
                 vals = tuple(value_of(exp,nameless_env) for exp in exps)
                 new_env = extend_nameless_env_vals(vals,nameless_env)
                 return value_of(body,new_env)
-            case App_Exp(operator,operand):
+            case Apply(operator,operand):
                 proc = value_of(operator,nameless_env)
                 if len(operand) == 1 and isinstance(operand[0],Unpack_Exp):
                     args = value_of(operand[0].list_expr,nameless_env)

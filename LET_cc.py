@@ -41,20 +41,20 @@ def apply_proc_k(proc:Proc_Val|Primitve_Implementation,args,cc):
     return value_of_k(proc.body,env,cc)
 
 def value_of_k(expr,env,cc):
-    if isinstance(expr, Const_Exp):
+    if isinstance(expr, Const):
         return apply_cont(cc,expr.val)
-    elif isinstance(expr, Var_Exp):
+    elif isinstance(expr, Var):
         return apply_cont(cc, apply_env(env, expr.var)) 
     elif isinstance(expr, Diff_Exp):
         return value_of_k(expr.left,env,diff_cc1_ctor(expr.right,env,cc))
-    elif isinstance(expr, Zero_Test_Exp):
+    elif isinstance(expr, Zero_Test):
         return value_of_k(expr.exp,env,zero_cc_ctor(cc))
     elif isinstance(expr, Branch):
         cc = branch_cc_ctor(expr.conseq,expr.alter,env,cc)
         return value_of_k(expr.pred,env,cc)
     elif isinstance(expr, Proc_Exp):
         return apply_cont(cc, Proc_Val(expr.params, expr.body, env))
-    elif isinstance(expr, App_Exp):
+    elif isinstance(expr, Apply):
         if expr.operand == ():
             return value_of_k(expr.operator,env,paramless_cc_ctor(cc))
         elif isinstance(expr.operand[0], Unpack_Exp):
@@ -65,31 +65,31 @@ def value_of_k(expr,env,cc):
     elif isinstance(expr, Rec_Proc):
         return value_of_k(expr.expr,extend_env_rec_multi(expr.var, expr.params,expr.body,env),cc)
     # exception
-    elif isinstance(expr,Try_Exp):
+    elif isinstance(expr,Try):
         return value_of_k(expr.exp,env,try_cont(expr.var,expr.handler,env,cc))
-    elif isinstance(expr,Raise_Exp):
+    elif isinstance(expr,Raise):
         return value_of_k(expr.exp,env,raise_cont1(cc))
     # derived form
-    elif isinstance(expr, Primitive_Exp):
-        return value_of_k(App_Exp(Var_Exp(expr.op),expr.exps),env,cc)
+    elif isinstance(expr, Primitive):
+        return value_of_k(Apply(Var(expr.op),expr.exps),env,cc)
     elif isinstance(expr,Conditional):
         return value_of_k(expand_conditional(expr),env,cc)
     elif isinstance(expr,List):
-        return value_of_k(Primitive_Exp('list',tuple(expr.exps)),env,cc)
+        return value_of_k(Primitive('list',tuple(expr.exps)),env,cc)
     elif isinstance(expr,Pair_Exp):
-        return value_of_k(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env,cc)
-    elif isinstance(expr,Let_Star_Exp):
+        return value_of_k(Apply(Var('cons'),(expr.left,expr.right)),env,cc)
+    elif isinstance(expr,Let_Star):
         return value_of_k(expand_let_star(expr),env,cc)
-    elif isinstance(expr,Let_Exp):
-        return value_of_k(App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps),env,cc)
+    elif isinstance(expr,Let):
+        return value_of_k(Apply(Proc_Exp(expr.vars,expr.body),expr.exps),env,cc)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-        return value_of_k(App_Exp(Proc_Exp(expr.vars,expr.expr),
+        return value_of_k(Apply(Proc_Exp(expr.vars,expr.expr),
                                   (Unpack_Exp(None,expr.list_expr,None),)),
                           env,cc)
     elif isinstance(expr,Null_Exp):
-        return value_of_k(App_Exp(Var_Exp('null?'),(expr.expr,)),env,cc)
+        return value_of_k(Apply(Var('null?'),(expr.expr,)),env,cc)
     else:
         raise Exception("Uknown LET expression type", expr)
 

@@ -1,32 +1,38 @@
 from dataclasses import dataclass
 import typing
+from typing import Callable
 
 @dataclass
-class Branch:
-    pred:typing.Any
-    conseq:typing.Any
-    alter:typing.Any
+class Expr:...
+@dataclass
+class Type:...
+
+@dataclass
+class Branch(Expr):
+    pred:Expr
+    conseq:Expr
+    alter:Expr
 
 @dataclass
 class Clause:
-    pred:typing.Any
-    conseq:typing.Any
+    pred:Expr
+    conseq:Expr
 
 @dataclass
-class Conditional:
+class Conditional(Expr):
     clauses:tuple[Clause]
-    otherwise:typing.Any
+    otherwise:Expr
 
 @dataclass
-class Diff_Exp:
+class Diff_Exp(Expr):
     'Deprecated : As derived form using Primitive_Exp; see LET_parser'
-    left:typing.Any
-    right:typing.Any
+    left:Expr
+    right:Expr
 
 @dataclass
-class Zero_Test_Exp:
+class Zero_Test(Expr):
     'Deprecated : As derived form using Primitive_Exp; see LET_parser'
-    exp:typing.Any
+    exp:Expr
 
 @dataclass
 class Primitve_Implementation:
@@ -35,65 +41,65 @@ class Primitve_Implementation:
     env:typing.Any = None
 
 @dataclass
-class Primitive_Exp:
-    op:typing.Any
-    exps:typing.Any
+class Primitive(Expr):
+    op:Expr
+    exps:Expr
 
 @dataclass
 class Bi_Op:
-    op:typing.Any
+    op:Callable
 
 @dataclass
 class Unary_Op:
-    op:typing.Any
+    op:Callable
 
 @dataclass
-class Var_Exp:
+class Var(Expr):
     var:str
 
 @dataclass
-class Let_Exp:
+class Let(Expr):
     vars:str
-    exps:typing.Any
-    body:typing.Any
+    exps:tuple[Expr]
+    body:Expr
 
 @dataclass
-class Let_Star_Exp:
+class Let_Star(Expr):
     vars:str
-    exps:typing.Any
-    body:typing.Any
+    exps:tuple[Expr]
+    body:Expr
 
 @dataclass
-class Const_Exp:
-    val:typing.Any
+class Const(Expr):
+    val:int|bool|float|str
 
 @dataclass
-class Proc_Exp:
-    params:typing.Any
-    body:typing.Any
-    types:typing.Any = None
+class Proc_Exp(Expr):
+    params:tuple[str]
+    body:Expr
+    types:tuple[Type] = None
 
 @dataclass
 class Proc_Val:
     'interpreter data struct'
-    params:typing.Any
-    body:typing.Any
+    params:tuple[str]
+    body:Expr
     env:typing.Any
-    types:typing.Any = None
+    types:tuple[Type] = None
 
 @dataclass
-class Rec_Proc:
-    var:typing.Any
-    params:typing.Any
-    body:typing.Any
-    expr:typing.Any
-    res_types:typing.Any = None
-    arg_types:typing.Any = None
+class Rec_Proc(Expr):
+    var:tuple[str]
+    params:tuple[tuple[str]]
+    body:tuple[Expr]
+    expr:Expr
+    res_types:tuple[Type] = None
+    arg_types:tuple[Type] = None
 
 @dataclass
-class App_Exp:
-    operator:typing.Any
-    operand:typing.Any
+class Apply(Expr):
+    operator:Expr
+    operand:tuple[Expr]
 
 @dataclass
 class Pair:
@@ -137,13 +143,13 @@ class Pair:
             return Pair(args[0], Pair.list_to_pair(*args[1:]))
     
 @dataclass
-class Pair_Exp:
+class Pair_Exp(Expr):
     left:None
     right:None
     homogeneous:bool = False
 
 @dataclass
-class Unpair_Exp:
+class Unpair_Exp(Expr):
     left:None
     right:None
     pair_exp:None
@@ -212,23 +218,23 @@ class Mutable_Pair:
 
         
 @dataclass
-class List:
-    exps:typing.Any
+class List(Expr):
+    exps:tuple[Expr]
 
 @dataclass
-class NULL:
-    t:typing.Any = None
+class NULL(Expr):
+    t:Type = None
     def __str__(self) -> None:
         return '()'
     def __post_init__(self):
         self.t = No_Type() if self.t is None else self.t
 
 @dataclass
-class Null_Exp:
-    expr:typing.Any
+class Null_Exp(Expr):
+    expr:Expr
 
 @dataclass
-class Unpack_Exp:
+class Unpack_Exp(Expr):
     'interpreter data struct'
     'but also AST'
     vars:typing.Any
@@ -258,36 +264,36 @@ class Nameless_Rec_Exp:
     body:typing.Any
 
 @dataclass
-class Sequence:
-    exps:typing.Any
+class Sequence(Expr):
+    exps:tuple[Expr]
     
 @dataclass
-class NewRef:
-    expr:typing.Any
+class NewRef(Expr):
+    expr:Expr
     
 @dataclass
-class DeRef:
-    expr:typing.Any
+class DeRef(Expr):
+    expr:Expr
 
 @dataclass
-class SetRef:
-    loc:typing.Any
-    expr:typing.Any
+class SetRef(Expr):
+    loc:Expr
+    expr:Expr
     
 @dataclass
-class Ref:
-    var:typing.Any
+class Ref(Expr):
+    var:Expr
 
 @dataclass
-class Assign_Exp:
-    var:None
-    expr:None
+class Assign(Expr):
+    var:str
+    expr:Expr
 
 @dataclass
-class Letmutable_Exp:
-    vars:str
-    exps:typing.Any
-    body:typing.Any
+class Letmutable(Expr):
+    vars:tuple[Expr]
+    exps:tuple[Expr]
+    body:Expr
 
 @dataclass
 class Thunk:
@@ -297,28 +303,28 @@ class Thunk:
 
 # CONTINUATION
 @dataclass
-class Try_Exp:
-    exp:None
-    var:None
+class Try(Expr):
+    exp:Expr
+    var:str
     handler:None
 
 @dataclass
-class Raise_Exp:
-    exp:None
+class Raise(Expr):
+    exp:Expr
 
 # TYPE
 @dataclass
-class Int_Type:
+class Int_Type(Type):
     def __str__(self) -> str:
         return 'int'
 
 @dataclass
-class Bool_Type:
+class Bool_Type(Type):
     def __str__(self) -> str:
         return 'bool'
 
 @dataclass
-class Proc_Type:
+class Proc_Type(Type):
     arg_type:tuple
     res_type:typing.Any
     def __str__(self) -> str:
@@ -331,35 +337,35 @@ class Proc_Type:
         raise DeprecationWarning
 
 @dataclass
-class Void_Type:
+class Void_Type(Type):
     def __str__(self) -> str:
         return 'void'
 
 @dataclass
-class No_Type:
+class No_Type(Type):
     def __str__(self) -> str:
         return '?'
 
 @dataclass
-class Pair_Type:
-    t0:typing.Any
-    t1:typing.Any
+class Pair_Type(Type):
+    t0:Type
+    t1:Type
     def __str__(self) -> str:
         return f'pairof {self.t0} * {self.t1}'
 
 @dataclass
-class List_Type:
-    t:typing.Any
+class List_Type(Type):
+    t:Type
     def __str__(self) -> str:
         return f'listof {self.t}'
     
 @dataclass
-class Qualified_Type:
+class Qualified_Type(Type):
     module_name:str
     type_name:str
 
 @dataclass
-class Named_Type:
+class Named_Type(Type):
     name:str
 
 
@@ -367,17 +373,17 @@ class Named_Type:
 @dataclass
 class Var_Def:
     name:str
-    expr:typing.Any
+    expr:Expr
 
 @dataclass
 class Type_Def:
     name:str
-    type:None
+    type:Type
 
 @dataclass
 class Var_Decl:
     name:str
-    type:None
+    type:Type
 
 @dataclass
 class Opaque_Type_Decl:
@@ -386,7 +392,7 @@ class Opaque_Type_Decl:
 @dataclass
 class Transparent_Type_Decl:
     name:str
-    type:None
+    type:Type
 
 Decl_Type = Var_Decl|Opaque_Type_Decl|Transparent_Type_Decl
 Def_Type = Var_Def|Type_Def
@@ -396,7 +402,7 @@ class Module_Def:
     name:str
     interface: tuple[Decl_Type]
     modules:tuple
-    let_block:Let_Exp|Let_Star_Exp|Letmutable_Exp|Rec_Proc
+    let_block:Let|Let_Star|Letmutable|Rec_Proc
     body: tuple[Def_Type]
 
 @dataclass
@@ -406,14 +412,14 @@ class Qualified_Var_Exp:
 
 @dataclass
 class Proc_Interface:
-    params:tuple
+    params:tuple[str]
     interfaces:tuple[tuple[Decl_Type]]
     res_interface:tuple[Decl_Type]
 
 @dataclass
 class Proc_Module:
     'interpreter data structure'
-    params:tuple
+    params:tuple[str]
     body:tuple[Def_Type]
     env:None
 

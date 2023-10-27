@@ -152,9 +152,9 @@ def type_of_prog(prog, env = init_tenv(), parse = parser.parse):
         return type_of(parse(prog),env,empty_subst())
 
 def type_of(expr, env, subst):
-    if isinstance(expr, Const_Exp):
+    if isinstance(expr, Const):
         return Answer(Int_Type(),subst)
-    elif isinstance(expr, Var_Exp):
+    elif isinstance(expr, Var):
         return Answer(apply_env(env,expr.var),subst)
     elif isinstance(expr, Diff_Exp):
         ans:Answer = type_of(expr.left,env,subst)
@@ -162,7 +162,7 @@ def type_of(expr, env, subst):
         ans:Answer = type_of(expr.right,env,subst)
         subst = unifier(ans.type, Int_Type(), ans.subst, expr.right)
         return Answer(Int_Type(),subst)
-    elif isinstance(expr, Zero_Test_Exp):
+    elif isinstance(expr, Zero_Test):
         ans:Answer = type_of(expr.exp,env,subst)
         subst = unifier(ans.type,Int_Type(),ans.subst,expr)
         return Answer(Bool_Type(),subst)
@@ -178,7 +178,7 @@ def type_of(expr, env, subst):
         env = extend_env_from_pairs(expr.params,var_types,env)
         ans:Answer = type_of(expr.body,env,subst)
         return Answer(Proc_Type(var_types,ans.type),ans.subst)
-    elif isinstance(expr, App_Exp):
+    elif isinstance(expr, Apply):
         # proc = value_of(expr.operator,env)
         ans_operator:Answer = type_of(expr.operator,env,subst)
         ans_operands = tuple(
@@ -210,17 +210,17 @@ def type_of(expr, env, subst):
     elif isinstance(expr,Pair_Exp):
         raise NotImplementedError
     # Derived Form
-    elif isinstance(expr,Let_Exp):
+    elif isinstance(expr,Let):
         # return value_of(expr.body, extend_env(expr.var, value_of(expr.exp,env), env))
         # as derived form
         types = tuple(type_of(exp,env,subst) for exp in expr.exps)
-        return type_of(App_Exp(Proc_Exp(expr.vars, expr.body,types), expr.exps), env,subst)
-    elif isinstance(expr,Let_Star_Exp):
+        return type_of(Apply(Proc_Exp(expr.vars, expr.body,types), expr.exps), env,subst)
+    elif isinstance(expr,Let_Star):
         def expand(vars,exprs):
             if vars == ():
                 return expr.body
             else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+                return Let([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
         return type_of(expand(expr.vars,expr.exps),env,subst)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause]):
@@ -228,17 +228,17 @@ def type_of(expr, env, subst):
                 if expr.otherwise is not None:
                     return Branch(clauses[0].pred,clauses[0].conseq,expr.otherwise)
                 else:
-                    false_val = Zero_Test_Exp(Const_Exp(1))
+                    false_val = Zero_Test(Const(1))
                     return Branch(clauses[0].pred,clauses[0].conseq,false_val)
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return type_of(expand(expr.clauses),env,subst)
-    elif isinstance(expr, Primitive_Exp):
-        return type_of(App_Exp(Var_Exp(expr.op),expr.exps),env,subst)
+    elif isinstance(expr, Primitive):
+        return type_of(Apply(Var(expr.op),expr.exps),env,subst)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-        return type_of(App_Exp(operator = Proc_Exp(expr.vars,expr.expr),
+        return type_of(Apply(operator = Proc_Exp(expr.vars,expr.expr),
                                 operand  = (Unpack_Exp(None,expr.list_expr,None),)
                                 ),env,subst)
     else:

@@ -63,7 +63,7 @@ class IMPLICIT_REFS_Interpreter:
     def value_of(self,expr, env):
         value_of = self.value_of
         match expr:
-            case Var_Exp(var):
+            case Var(var):
                 res = apply_env(env, var)
                 if isinstance(res,Immutable):
                     return res.val
@@ -71,25 +71,25 @@ class IMPLICIT_REFS_Interpreter:
                     return deref(res)
             case Rec_Proc(vars,params,body,exp):
                 return value_of(exp, extend_env_rec_ref(vars,params,body,env))
-            case Let_Exp(vars,exps,body):
+            case Let(vars,exps,body):
                 # introduce immutability
                 vals = tuple(Immutable(value_of(exp,env)) for exp in exps)
                 env = extend_env_from_pairs(vars,vals,env)
                 return value_of(body,env)
             # Statement
             case Ref(var):
-                if not isinstance(var,Var_Exp):
+                if not isinstance(var,Var):
                     raise Exception("The argument passed to ref is not a variable")
                 var = var.var
                 loc = apply_env(env,var)
                 return loc
-            case Assign_Exp(var,exp):
+            case Assign(var,exp):
                 res = apply_env(env,var)
                 if isinstance(res,Immutable):
                     raise Immutable_Modify_Error(f"error : attempt to modify immutable variable {var}")
                 setref(res,value_of(exp,env))
             # derived form
-            case Letmutable_Exp(vars,exps,body):
-                return value_of(App_Exp(Proc_Exp(vars, body), exps), env)
+            case Letmutable(vars,exps,body):
+                return value_of(Apply(Proc_Exp(vars, body), exps), env)
             case _:
                 return EXPLICIT_REFS_Interpreter.value_of(self,expr,env)

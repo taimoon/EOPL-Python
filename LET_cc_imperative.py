@@ -110,16 +110,16 @@ def apply_proc_k():
 
 def value_of_k():
     expr,env,cc = reg.exp,reg.env,reg.cc
-    if isinstance(expr, Const_Exp):
+    if isinstance(expr, Const):
         reg.val = expr.val
         reg.pc = apply_cont
-    elif isinstance(expr, Var_Exp):
+    elif isinstance(expr, Var):
         reg.val = apply_env(env,expr.var)
         reg.pc = apply_cont
     elif isinstance(expr, Diff_Exp):
         reg.cc = diff_cc1_ctor(expr.right,env,cc)
         reg.exp = expr.left
-    elif isinstance(expr, Zero_Test_Exp):
+    elif isinstance(expr, Zero_Test):
         reg.cc = zero_cc_ctor(cc)
         reg.exp = expr.exp
     elif isinstance(expr, Branch):
@@ -128,7 +128,7 @@ def value_of_k():
     elif isinstance(expr, Proc_Exp):
         reg.val = Proc_Val(expr.params,expr.body,env)
         reg.pc = apply_cont
-    elif isinstance(expr, App_Exp):
+    elif isinstance(expr, Apply):
         if expr.operand == ():
             reg.cc = paramless_cc_ctor(cc)
             reg.exp = expr.operator
@@ -142,32 +142,32 @@ def value_of_k():
         reg.exp = expr.expr
         reg.env = extend_env_rec_multi(expr.var,expr.params,expr.body,env)
     # exception
-    elif isinstance(expr,Try_Exp):
+    elif isinstance(expr,Try):
         reg.exp = expr.exp
         reg.cc = try_cont(expr.var,expr.handler,env,cc)
-    elif isinstance(expr,Raise_Exp):
+    elif isinstance(expr,Raise):
         reg.exp = expr.exp
         reg.cc = raise_cont1(cc)
     # derived form
-    elif isinstance(expr, Primitive_Exp):
-        reg.exp = App_Exp(Var_Exp(expr.op),expr.exps)
+    elif isinstance(expr, Primitive):
+        reg.exp = Apply(Var(expr.op),expr.exps)
     elif isinstance(expr,Conditional):
         reg.exp = expand_conditional(expr)
     elif isinstance(expr,List):
-        reg.exp = Primitive_Exp('list',tuple(expr.exps))
+        reg.exp = Primitive('list',tuple(expr.exps))
     elif isinstance(expr,Pair_Exp):
-        reg.exp = App_Exp(Var_Exp('cons'),(expr.left,expr.right))
-    elif isinstance(expr,Let_Star_Exp):
+        reg.exp = Apply(Var('cons'),(expr.left,expr.right))
+    elif isinstance(expr,Let_Star):
         reg.exp = expand_let_star(expr)
-    elif isinstance(expr,Let_Exp):
-        reg.exp = App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps)
+    elif isinstance(expr,Let):
+        reg.exp = Apply(Proc_Exp(expr.vars,expr.body),expr.exps)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-        reg.exp = App_Exp(Proc_Exp(expr.vars,expr.expr),
+        reg.exp = Apply(Proc_Exp(expr.vars,expr.expr),
                                   (Unpack_Exp(None,expr.list_expr,None),))
     elif isinstance(expr,Null_Exp):
-        reg.exp = App_Exp(Var_Exp('null?'),(expr.expr,))
+        reg.exp = Apply(Var('null?'),(expr.expr,))
     else:
         raise Exception("Uknown LET expression type", expr)
 
