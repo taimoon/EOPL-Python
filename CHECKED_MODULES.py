@@ -63,13 +63,13 @@ class CHECKED:
         
         return tenv
 
-    def let_exp_to_tenv(self,exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv:Environment):
+    def let_exp_to_tenv(self,exp:Let|Let_Star|Rec_Proc,tenv:Environment):
         let_exp_to_tenv = self.let_exp_to_tenv
         type_of = self.type_of
-        if isinstance(exp,Let_Exp):
+        if isinstance(exp,Let):
             vals = tuple(type_of(exp,tenv) for exp in exp.exps)
             return extend_tenv_from_pairs(exp.vars,vals,tenv)
-        elif isinstance(exp,Let_Star_Exp):
+        elif isinstance(exp,Let_Star):
             return let_exp_to_tenv(expand_let_star(exp),tenv)
         elif isinstance(exp,Rec_Proc):
             rec_proc_to_tenv = self.rec_proc_to_tenv

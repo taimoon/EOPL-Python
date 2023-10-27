@@ -1,3 +1,11 @@
+# import sys
+# def add_path(p:str) -> None:
+#     from os import getcwd
+#     if p not in sys.path:
+#         sys.path.append(getcwd())
+# add_path('..')
+# print(sys.path)
+
 from LET_ast_node import *
 from LET_parser import parser
 from LET_environment import (
@@ -10,19 +18,19 @@ from LET_environment import (
 def value_of_prog(prog,env = init_env(),parse = parser.parse):
     return Let_Interpreter().value_of_prog(prog,env,parse)
 
-def expand_let_star(expr:Let_Star):
+def expand_let_star(expr:Let_Star_Exp):
     def recur(vars,exps):
         if vars == ():
             return expr.body
         else:
-            return Let((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
+            return Let_Exp((vars[0],),(exps[0],),recur(vars[1:],exps[1:]))
     return recur(expr.vars,expr.exps)
 
 def expand_conditional(expr:Conditional):
 
     def expand(clauses:tuple[Clause],otherwise):
         if clauses[1:] == ():
-            otherwise = Zero_Test(Const(1)) if otherwise is None else otherwise
+            otherwise = Zero_Test_Exp(Const_Exp(1)) if otherwise is None else otherwise
             return Branch(clauses[0].pred,clauses[0].conseq,otherwise)
         else:
             return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:],otherwise))
@@ -35,7 +43,7 @@ class Let_Interpreter:
         prog = parse(prog)
         return value_of(prog,env)
     
-    def apply_primitive(self,prim:Primitive,args):
+    def apply_primitive(self,prim:Primitive_Exp,args):
         return prim.op(*args)
     
     def apply_proc(self,proc:Proc_Val|Primitve_Implementation,args):
@@ -49,13 +57,13 @@ class Let_Interpreter:
         value_of = self.value_of
         apply_proc = self.apply_proc
         match expr:
-            case Const(val):
+            case Const_Exp(val):
                 return val
-            case Var(var):
+            case Var_Exp(var):
                 return apply_env(env,expr.var)
             case Diff_Exp(left,right):
                 return value_of(left,env) - value_of(right,env) 
-            case Zero_Test(exp):
+            case Zero_Test_Exp(exp):
                 return value_of(exp,env) == 0
             case Branch(pred,conseq,alter):
                 if value_of(pred,env) is True:
@@ -64,7 +72,7 @@ class Let_Interpreter:
                     return value_of(alter,env)
             case Proc_Exp(params,body):
                 return Proc_Val(params,body,env)
-            case Apply(operator,operand):
+            case App_Exp(operator,operand):
                 proc = value_of(operator,env)
                 if len(operand) == 1 and isinstance(operand[0],Unpack_Exp):
                     args = value_of(operand[0].list_expr,env)
@@ -74,7 +82,7 @@ class Let_Interpreter:
             case Rec_Proc(var,params,body,exp):
                 return value_of(exp, extend_env_rec_multi(var,params,body,env))
             case Pair_Exp(left,right):
-                return value_of(Apply(Var('cons'),(left,right)),env)
+                return value_of(App_Exp(Var_Exp('cons'),(left,right)),env)
             case Unpair_Exp(left,right,pair_exp,exp):
                 pair:Pair = value_of(pair_exp,env)
                 vars = left,right
@@ -82,24 +90,24 @@ class Let_Interpreter:
                 env = extend_env_from_pairs(vars,vals,env)
                 return value_of(expr.expr,env)
             # Derived Form
-            case Let(vars,exps,body):
-                return value_of(Apply(Proc_Exp(vars,body),exps),env)
-            case Let_Star(vars,exps,body):
+            case Let_Exp(vars,exps,body):
+                return value_of(App_Exp(Proc_Exp(vars,body),exps),env)
+            case Let_Star_Exp(vars,exps,body):
                 return value_of(expand_let_star(expr),env)
             case Conditional():
                 return value_of(expand_conditional(expr),env)
-            case Primitive(op,exps):
-                return value_of(Apply(Var(op),exps),env)
+            case Primitive_Exp(op,exps):
+                return value_of(App_Exp(Var_Exp(op),exps),env)
             case List(exps):
-                return value_of(Apply(Var('list'),exps),env)
+                return value_of(App_Exp(Var_Exp('list'),exps),env)
             case Unpack_Exp(vars,list_expr,exp):
                 if vars is None or expr is None:
                     raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-                return value_of(Apply(operator = Proc_Exp(vars,exp),
+                return value_of(App_Exp(operator = Proc_Exp(vars,exp),
                                         operand  = (Unpack_Exp(None,list_expr,None),))
                                 ,env)
             case Null_Exp(exp):
-                return value_of(Apply(Var('null?'),(exp,)),env)
+                return value_of(App_Exp(Var_Exp('null?'),(exp,)),env)
             case _:
                 raise Exception("Uknown LET expression type", expr)
 

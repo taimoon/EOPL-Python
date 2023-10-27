@@ -54,7 +54,7 @@ class IMPLICIT_REFS_Interpreter(EXPLICIT_REFS_Interpreter):
     def value_of_k(self,expr,env,cc):
         apply_cont = self.apply_cont
         value_of_k = self.value_of_k
-        if isinstance(expr,Var_Exp):
+        if isinstance(expr,Var):
             res = apply_env(env,expr.var)
             if isinstance(res,Immutable):
                 val = res.val
@@ -64,22 +64,22 @@ class IMPLICIT_REFS_Interpreter(EXPLICIT_REFS_Interpreter):
         elif isinstance(expr,Rec_Proc):
             # BUG
             return value_of_k(expr.expr,extend_env_rec_ref(expr.var,expr.params,expr.body,env),cc)
-        elif isinstance(expr,Let_Exp):
+        elif isinstance(expr,Let):
             let_cc_ctor = self.let_cc_ctor
             return value_of_k(Proc_Exp(expr.vars,expr.body),env,let_cc_ctor(expr.exps,env,cc))
         # Statement
         elif isinstance(expr,Ref):
-            if not isinstance(expr.var,Var_Exp):
+            if not isinstance(expr.var,Var):
                 raise Exception("The argument passed to ref is not a variable")
             var = expr.var.var
             loc = apply_env(env,var)
             return apply_cont(cc,loc)
-        elif isinstance(expr,Assign_Exp):
+        elif isinstance(expr,Assign):
             assign_cc_ctor = self.assign_cc_ctor
             return value_of_k(expr.expr,env,assign_cc_ctor(expr.var,env,cc))
         # derived form
-        elif isinstance(expr,Letmutable_Exp):
-            return value_of_k(App_Exp(Proc_Exp(expr.vars,expr.body),expr.exps),env,cc)
+        elif isinstance(expr,Letmutable):
+            return value_of_k(Apply(Proc_Exp(expr.vars,expr.body),expr.exps),env,cc)
         else:
             return super().value_of_k(expr,env,cc)
     

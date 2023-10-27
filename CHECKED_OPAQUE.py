@@ -66,7 +66,7 @@ class CHECKED:
         
         return tenv
 
-    def let_exp_to_tenv(self,exp:Let_Exp|Let_Star_Exp|Rec_Proc,tenv:Environment):
+    def let_exp_to_tenv(self,exp:Let|Let_Star|Rec_Proc,tenv:Environment):
         return CHECKED_MODULES.let_exp_to_tenv(self,exp,tenv)
 
     def interface_of(self,body:Module_Body_T,tenv:Environment) -> tuple[Decl_Type]:

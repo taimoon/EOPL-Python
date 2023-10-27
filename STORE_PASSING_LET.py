@@ -48,15 +48,15 @@ def apply_proc(proc:Proc_Val|Primitve_Implementation,args,env,store:Store) -> An
         return value_of(proc.body, env, store)
     
 def value_of(expr, env, store:Store) -> Answer:
-    if isinstance(expr, Const_Exp):
+    if isinstance(expr, Const):
         return Answer(expr.val,store)
-    elif isinstance(expr, Var_Exp):
+    elif isinstance(expr, Var):
         return Answer(apply_env(env, expr.var),store)
     elif isinstance(expr, Diff_Exp):
         left_val,store = value_of(expr.left,env,store)
         right_val,store = value_of(expr.right,env,store)
         return Answer(left_val - right_val,store)
-    elif isinstance(expr, Zero_Test_Exp):
+    elif isinstance(expr, Zero_Test):
         val,store = value_of(expr.exp,env,store)
         return Answer(val == 0,store)
     elif isinstance(expr, Branch):
@@ -67,7 +67,7 @@ def value_of(expr, env, store:Store) -> Answer:
             return value_of(expr.alter,env,store)
     elif isinstance(expr, Proc_Exp):
         return Answer(Proc_Val(expr.params,expr.body,env),store)
-    elif isinstance(expr, App_Exp):
+    elif isinstance(expr, Apply):
         proc,store = value_of(expr.operator,env,store)
         if len(expr.operand) == 1 and isinstance(expr.operand[0],Unpack_Exp):
             args,store = value_of(expr.operand[0].list_expr,env,store)
@@ -98,37 +98,37 @@ def value_of(expr, env, store:Store) -> Answer:
         store = store.setref(ref,val)
         return Answer(Pair(ref,val),store)
     # derived form
-    elif isinstance(expr, Primitive_Exp):
-        return value_of(App_Exp(Var_Exp(expr.op),expr.exps),env,store)
+    elif isinstance(expr, Primitive):
+        return value_of(Apply(Var(expr.op),expr.exps),env,store)
     elif isinstance(expr,Conditional):
         def expand(clauses:tuple[Clause]):
             if clauses[1:] == ():
                 if expr.otherwise is not None:
                     return Branch(clauses[0].pred,clauses[0].conseq,expr.otherwise)
                 else:
-                    false_val = Zero_Test_Exp(Const_Exp(1))
+                    false_val = Zero_Test(Const(1))
                     return Branch(clauses[0].pred,clauses[0].conseq,false_val)
             else:
                 return Branch(clauses[0].pred,clauses[0].conseq,expand(clauses[1:]))
         return value_of(expand(expr.clauses),env,store)
     elif isinstance(expr,List):
-        return value_of(App_Exp(Var_Exp('list'),tuple(expr.exps)),env,store)
+        return value_of(Apply(Var('list'),tuple(expr.exps)),env,store)
     elif isinstance(expr,Pair_Exp):
-        return value_of(App_Exp(Var_Exp('cons'),(expr.left,expr.right)),env,store)
+        return value_of(Apply(Var('cons'),(expr.left,expr.right)),env,store)
     elif isinstance(expr,Unpack_Exp):
         if expr.vars is None or expr.expr is None:
             raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-        return value_of(App_Exp(operator = Proc_Exp(expr.vars,expr.expr),
+        return value_of(Apply(operator = Proc_Exp(expr.vars,expr.expr),
                                 operand  = (Unpack_Exp(None,expr.list_expr,None),)
                                 ),env,store)
-    elif isinstance(expr,Let_Exp):
-        return value_of(App_Exp(Proc_Exp(expr.vars, expr.body), expr.exps),env,store)
-    elif isinstance(expr,Let_Star_Exp):
+    elif isinstance(expr,Let):
+        return value_of(Apply(Proc_Exp(expr.vars, expr.body), expr.exps),env,store)
+    elif isinstance(expr,Let_Star):
         def expand(vars,exprs):
             if vars == ():
                 return expr.body
             else:
-                return Let_Exp([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
+                return Let([vars[0]],[exprs[0]],expand(vars[1:],exprs[1:]))
         return value_of(expand(expr.vars,expr.exps),env,store)
     else:
         raise Exception("Uknown LET expression type",expr)

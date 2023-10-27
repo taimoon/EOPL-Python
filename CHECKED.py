@@ -27,19 +27,19 @@ class CHECKED:
         type_of = self.type_of
         rec_proc_to_tenv = self.rec_proc_to_tenv
         match expr:
-            case Const_Exp(val=NULL(t=No_Type())):
+            case Const(val=NULL(t=No_Type())):
                 return No_Type()
-            case Const_Exp(val=NULL(t=t)):
+            case Const(val=NULL(t=t)):
                 return List_Type(t)
-            case Const_Exp():
+            case Const():
                 return Int_Type()
-            case Var_Exp(var):
+            case Var(var):
                 return apply_tenv(tenv,var)
             case Diff_Exp(left,right):
                 check_equal_type(type_of(left,tenv),Int_Type(),left)
                 check_equal_type(type_of(right,tenv),Int_Type(),right)
                 return Int_Type()
-            case Zero_Test_Exp(exp):
+            case Zero_Test(exp):
                 check_equal_type(type_of(exp,tenv),Int_Type(),exp)
                 return Bool_Type()
             case Branch(pred,conseq,alter):
@@ -53,7 +53,7 @@ class CHECKED:
                 arg_type = types
                 res_type = type_of(body,ext_env)
                 return Proc_Type(arg_type,res_type)
-            case App_Exp(operator,operand):
+            case Apply(operator,operand):
                 proc_t = type_of(operator,tenv)
                 if not isinstance(proc_t,Proc_Type):
                     raise Exception(f"Operator is not a procedure type {proc_t} {operator}")
@@ -106,28 +106,28 @@ class CHECKED:
                 check_equal_type(ref_t,Int_Type(),loc)
                 return Void_Type()
             # Derived Form
-            case Let_Exp(vars,exps,body):
+            case Let(vars,exps,body):
                 types = tuple(type_of(exp,tenv) for exp in exps)
-                return type_of(App_Exp(Proc_Exp(vars,body,types),exps),tenv)
-            case Let_Star_Exp():
+                return type_of(Apply(Proc_Exp(vars,body,types),exps),tenv)
+            case Let_Star():
                 return type_of(expand_let_star(expr),tenv)
             case Conditional():
                 return type_of(expand_conditional(expr),tenv)
-            case Primitive_Exp('car',(exp,)):
+            case Primitive('car',(exp,)):
                 t = type_of(exp,tenv)
                 t = t.t if isinstance(t,List_Type) else t
                 t = t.t0 if isinstance(t,Pair_Type) else t
                 return t
-            case Primitive_Exp('cdr',(exp,)):
+            case Primitive('cdr',(exp,)):
                 t = type_of(exp,tenv)
                 t = t.t1 if isinstance(t,Pair_Type) else t
                 return t
-            case Primitive_Exp(op,exps):
-                return type_of(App_Exp(Var_Exp(op),exps),tenv)
+            case Primitive(op,exps):
+                return type_of(Apply(Var(op),exps),tenv)
             case Unpack_Exp(vars,list_expr,exp):
                 if vars is None or exp is None:
                     raise Exception("Ill-formed : Isolated Unpack Exp due to not in application expression")
-                return type_of(App_Exp(operator = Proc_Exp(vars,exp),
+                return type_of(Apply(operator = Proc_Exp(vars,exp),
                                         operand  = (Unpack_Exp(None,list_expr,None),)
                                         ),tenv)
             case _:

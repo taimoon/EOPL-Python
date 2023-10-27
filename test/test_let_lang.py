@@ -499,6 +499,10 @@ def test_all():
     from sys import setrecursionlimit
     setrecursionlimit(225)
     
+    from interpreter.LET import value_of_prog
+    print('LET')
+    test_all_by_variant(value_of_prog)
+    
     from LET import value_of_prog
     print('LET')
     test_all_by_variant(value_of_prog)
